@@ -36,6 +36,19 @@ describe('LoginPage', () => {
     expect(await screen.findByRole('heading', { name: 'Weak Box' })).toBeInTheDocument();
   });
 
+  it('keeps the query string of the page that required sign-in', async () => {
+    const auth = authValue();
+    const router = renderRoutes(routes, '/login', auth);
+    await router.navigate('/login', {
+      state: { from: { pathname: '/reviews', search: '?tab=upcoming' } },
+    });
+
+    await fillAndSubmit();
+
+    expect(await screen.findByRole('heading', { name: 'Weak Box' })).toBeInTheDocument();
+    expect(router.state.location.search).toBe('?tab=upcoming');
+  });
+
   it('shows the error and stays on the page when sign-in fails', async () => {
     const auth = authValue({
       signIn: vi.fn().mockResolvedValue({ error: 'Invalid login credentials' }),

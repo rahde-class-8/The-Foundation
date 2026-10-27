@@ -9,8 +9,8 @@ test.skip(
   'Requires the local Supabase stack with the practice fixture and the seeded test clock.',
 );
 
-async function signInAs(page: Page, learner: Learner, path: string) {
-  await page.goto(path);
+async function signInAs(page: Page, learner: Learner) {
+  await page.goto('/dashboard');
   await page.getByLabel('Email').fill(learner.email);
   await page.getByLabel('Password').fill(learner.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
@@ -25,7 +25,8 @@ test('miss, return a day later for a cold review, and see it on the dashboard (D
   const concepts = await fixtureConcepts(learner.client);
 
   // Day 0: a weak answer with a diagnosed misconception, then skip the correction.
-  await signInAs(page, learner, `/practice?start=concept&id=${concepts.queues}`);
+  await signInAs(page, learner);
+  await page.goto(`/practice?start=concept&id=${concepts.queues}`);
   await page.getByLabel('Your answer').fill('I am not sure. [[mock:misconception:push-model]]');
   await page.getByLabel('Your answer').press('Control+Enter');
   await page.getByRole('button', { name: 'Accept and correct' }).click();

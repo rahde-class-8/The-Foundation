@@ -6,11 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth/auth-context';
 
+/** Where to go after signing in: the page that sent the visitor here, query string included. */
 function redirectTarget(state: unknown): string {
-  const from = (state as { from?: { pathname?: unknown } } | null)?.from?.pathname;
-  return typeof from === 'string' && from.startsWith('/') && from !== '/login'
-    ? from
-    : '/dashboard';
+  const from = (state as { from?: { pathname?: unknown; search?: unknown } } | null)?.from;
+  const pathname = from?.pathname;
+  if (
+    typeof pathname !== 'string' ||
+    !pathname.startsWith('/') ||
+    pathname.startsWith('//') ||
+    pathname === '/login'
+  )
+    return '/dashboard';
+  return typeof from?.search === 'string' && from.search.startsWith('?')
+    ? `${pathname}${from.search}`
+    : pathname;
 }
 
 export function LoginPage() {
