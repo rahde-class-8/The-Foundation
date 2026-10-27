@@ -24,7 +24,7 @@ CNT-2a, CNT-4a, CNT-6a, CNT-7a, CNT-8a, CNT-9a, CNT-10a, plus:
 ## Implementation results
 
 **Status:** Complete on branch `phase-4/content-import` (branched from `phase-3/weak-box`; not merged). CI run
-40576116229 green: quality (239 unit and component tests), deno, supabase (185 pgTAP assertions, 31 integration tests,
+40577165883 green: quality (239 unit and component tests), deno, supabase (185 pgTAP assertions, 31 integration tests,
 13 Playwright tests, no retries), gitleaks. Awaiting owner sign-off.
 
 | ID | Result | Evidence |
