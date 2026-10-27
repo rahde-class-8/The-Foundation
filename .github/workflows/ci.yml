@@ -69,8 +69,9 @@ jobs:
         run: |
           npm run db:types
           if ! git diff --quiet src/lib/database.types.ts; then
-            # Publish the generated file (gzip + base64, chunked) so it can be committed without log access.
-            gzip -9c src/lib/database.types.ts | base64 -w0 | fold -w 30000 > /tmp/types.b64
+            # Publish the generated file (gzip + base64, 4,000-character chunks: annotation messages are capped
+            # at 4,096 characters and ~10 per step) so it can be committed without log access.
+            gzip -9c src/lib/database.types.ts | base64 -w0 | fold -w 4000 > /tmp/types.b64
             n=0
             while read -r chunk || [ -n "$chunk" ]; do
               echo "::notice title=database.types.ts.gz.b64 part $n::$chunk"
