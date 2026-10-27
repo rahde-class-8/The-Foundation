@@ -28,10 +28,12 @@ test('upload a PDF, draft from its passages, review, and publish (CNT-2…7, P4-
   await expect(row).toContainText('Your notes');
 
   await page.getByRole('tab', { name: 'Passages' }).click();
-  await page.getByLabel('Source').selectOption({ label: name });
+  await page.getByLabel('Source', { exact: true }).selectOption({ label: name });
   await page.getByRole('list', { name: 'Passages' }).getByRole('checkbox').first().check();
-  await page.getByLabel('Service').selectOption({ label: 'Practice Fixture Service' });
-  await page.getByLabel('Up to').selectOption('1');
+  await page
+    .getByLabel('Service', { exact: true })
+    .selectOption({ label: 'Practice Fixture Service' });
+  await page.getByLabel('Up to', { exact: true }).selectOption('1');
   await page.getByRole('button', { name: 'Generate drafts' }).click();
   await page.getByRole('status').getByRole('link').first().click();
 
