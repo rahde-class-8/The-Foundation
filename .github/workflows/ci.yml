@@ -72,7 +72,7 @@ jobs:
             # Publish the generated file (gzip + base64, chunked) so it can be committed without log access.
             gzip -9c src/lib/database.types.ts | base64 -w0 | fold -w 30000 > /tmp/types.b64
             n=0
-            while read -r chunk; do
+            while read -r chunk || [ -n "$chunk" ]; do
               echo "::notice title=database.types.ts.gz.b64 part $n::$chunk"
               n=$((n + 1))
             done < /tmp/types.b64
