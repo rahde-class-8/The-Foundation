@@ -23,7 +23,51 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "certifications": {
+            "attempts": {
+                  Row: {
+                    "answer_duration_ms": number | null,"answer_md": string,"attempt_kind": string,"client_key": string,"concept_id": string,"created_at": string,"final_evaluation_id": string | null,"finalized_at": string | null,"id": string,"is_cold": boolean,"parent_attempt_id": string | null,"question_version_id": string,"reference_revealed_at": string | null,"session_id": string,"status": string,"submitted_at": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "answer_duration_ms"?: number | null,"answer_md": string,"attempt_kind": string,"client_key": string,"concept_id": string,"created_at"?: string,"final_evaluation_id"?: string | null,"finalized_at"?: string | null,"id"?: string,"is_cold": boolean,"parent_attempt_id"?: string | null,"question_version_id": string,"reference_revealed_at"?: string | null,"session_id": string,"status"?: string,"submitted_at"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "answer_duration_ms"?: number | null,"answer_md"?: string,"attempt_kind"?: string,"client_key"?: string,"concept_id"?: string,"created_at"?: string,"final_evaluation_id"?: string | null,"finalized_at"?: string | null,"id"?: string,"is_cold"?: boolean,"parent_attempt_id"?: string | null,"question_version_id"?: string,"reference_revealed_at"?: string | null,"session_id"?: string,"status"?: string,"submitted_at"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "attempts_concept_id_fkey"
+      columns: ["concept_id"]
+isOneToOne: false
+      referencedRelation: "service_concepts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "attempts_final_evaluation_fk"
+      columns: ["final_evaluation_id"]
+isOneToOne: false
+      referencedRelation: "evaluations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "attempts_parent_attempt_id_fkey"
+      columns: ["parent_attempt_id"]
+isOneToOne: false
+      referencedRelation: "attempts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "attempts_question_version_id_fkey"
+      columns: ["question_version_id"]
+isOneToOne: false
+      referencedRelation: "question_versions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "attempts_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: false
+      referencedRelation: "study_sessions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"certifications": {
                   Row: {
                     "code": string,"created_at": string,"exam_guide_url": string | null,"exam_version": string,"id": string,"name": string,"status": string,"updated_at": string,"vendor": string
                   }
@@ -123,6 +167,32 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"evaluations": {
+                  Row: {
+                    "attempt_id": string,"confidence": number | null,"cost_usd": number | null,"created_at": string,"error_code": string | null,"feedback": Json | null,"grade": string | null,"id": string,"input_tokens": number | null,"latency_ms": number | null,"model": string | null,"output_tokens": number | null,"override_reason": string | null,"overrides_evaluation_id": string | null,"prompt_version": string | null,"provider": string | null,"raw_response_excerpt": string | null,"rubric_score": number | null,"source": string,"status": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempt_id": string,"confidence"?: number | null,"cost_usd"?: number | null,"created_at"?: string,"error_code"?: string | null,"feedback"?: Json | null,"grade"?: string | null,"id"?: string,"input_tokens"?: number | null,"latency_ms"?: number | null,"model"?: string | null,"output_tokens"?: number | null,"override_reason"?: string | null,"overrides_evaluation_id"?: string | null,"prompt_version"?: string | null,"provider"?: string | null,"raw_response_excerpt"?: string | null,"rubric_score"?: number | null,"source": string,"status": string,"user_id": string
+                  }
+                  Update: {
+                    "attempt_id"?: string,"confidence"?: number | null,"cost_usd"?: number | null,"created_at"?: string,"error_code"?: string | null,"feedback"?: Json | null,"grade"?: string | null,"id"?: string,"input_tokens"?: number | null,"latency_ms"?: number | null,"model"?: string | null,"output_tokens"?: number | null,"override_reason"?: string | null,"overrides_evaluation_id"?: string | null,"prompt_version"?: string | null,"provider"?: string | null,"raw_response_excerpt"?: string | null,"rubric_score"?: number | null,"source"?: string,"status"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "evaluations_attempt_id_fkey"
+      columns: ["attempt_id"]
+isOneToOne: false
+      referencedRelation: "attempts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "evaluations_overrides_evaluation_id_fkey"
+      columns: ["overrides_evaluation_id"]
+isOneToOne: false
+      referencedRelation: "evaluations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"exam_domains": {
                   Row: {
                     "certification_id": string,"code": string,"created_at": string,"id": string,"name": string,"sort_order": number,"updated_at": string,"weight_pct": number | null
@@ -186,6 +256,38 @@ isOneToOne: false
       columns: ["current_version_id"]
 isOneToOne: false
       referencedRelation: "question_versions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"review_events": {
+                  Row: {
+                    "attempt_id": string | null,"concept_id": string,"config_version": string | null,"event_type": string,"grade": string | null,"id": string,"idempotency_key": string,"is_cold": boolean | null,"new_due_at": string | null,"new_ease": number | null,"new_interval_days": number | null,"new_status": string | null,"occurred_at": string,"prev_due_at": string | null,"prev_ease": number | null,"prev_interval_days": number | null,"prev_status": string | null,"reason": string | null,"review_state_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempt_id"?: string | null,"concept_id": string,"config_version"?: string | null,"event_type": string,"grade"?: string | null,"id"?: string,"idempotency_key": string,"is_cold"?: boolean | null,"new_due_at"?: string | null,"new_ease"?: number | null,"new_interval_days"?: number | null,"new_status"?: string | null,"occurred_at"?: string,"prev_due_at"?: string | null,"prev_ease"?: number | null,"prev_interval_days"?: number | null,"prev_status"?: string | null,"reason"?: string | null,"review_state_id": string,"user_id": string
+                  }
+                  Update: {
+                    "attempt_id"?: string | null,"concept_id"?: string,"config_version"?: string | null,"event_type"?: string,"grade"?: string | null,"id"?: string,"idempotency_key"?: string,"is_cold"?: boolean | null,"new_due_at"?: string | null,"new_ease"?: number | null,"new_interval_days"?: number | null,"new_status"?: string | null,"occurred_at"?: string,"prev_due_at"?: string | null,"prev_ease"?: number | null,"prev_interval_days"?: number | null,"prev_status"?: string | null,"reason"?: string | null,"review_state_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "review_events_attempt_id_fkey"
+      columns: ["attempt_id"]
+isOneToOne: false
+      referencedRelation: "attempts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "review_events_concept_id_fkey"
+      columns: ["concept_id"]
+isOneToOne: false
+      referencedRelation: "service_concepts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "review_events_review_state_id_fkey"
+      columns: ["review_state_id"]
+isOneToOne: false
+      referencedRelation: "review_state"
       referencedColumns: ["id"]
     }
                   ]
@@ -309,23 +411,56 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"study_sessions": {
+                  Row: {
+                    "created_at": string,"ended_at": string | null,"id": string,"scope_id": string | null,"scope_type": string,"started_at": string,"status": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"ended_at"?: string | null,"id"?: string,"scope_id"?: string | null,"scope_type": string,"started_at"?: string,"status"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"ended_at"?: string | null,"id"?: string,"scope_id"?: string | null,"scope_type"?: string,"started_at"?: string,"status"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"user_settings": {
+                  Row: {
+                    "active_certification_id": string | null,"ai_grading_enabled": boolean,"created_at": string,"daily_new_limit": number,"daily_review_limit": number,"default_eval_mode": string,"scheduler_overrides": NonNullable<Json>,"timezone": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active_certification_id"?: string | null,"ai_grading_enabled"?: boolean,"created_at"?: string,"daily_new_limit"?: number,"daily_review_limit"?: number,"default_eval_mode"?: string,"scheduler_overrides"?: NonNullable<Json>,"timezone"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "active_certification_id"?: string | null,"ai_grading_enabled"?: boolean,"created_at"?: string,"daily_new_limit"?: number,"daily_review_limit"?: number,"default_eval_mode"?: string,"scheduler_overrides"?: NonNullable<Json>,"timezone"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_settings_active_certification_id_fkey"
+      columns: ["active_certification_id"]
+isOneToOne: false
+      referencedRelation: "certifications"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            "end_session": { Args: { session_id: string }; Returns: Json },
-"get_settings": { Args: never; Returns: Json },
-"update_settings": { Args: { ai_grading_enabled: boolean; daily_new_limit: number; daily_review_limit: number; default_eval_mode: string; timezone: string }; Returns: Json },
-"next_questions": { Args: { session_id: string }; Returns: Json },
-"practice_scopes": { Args: never; Returns: Json },
-"reveal_reference": { Args: { attempt_id: string }; Returns: Json },
-"session_state": { Args: { session_id: string }; Returns: Json },
-"start_session": { Args: { scope_id?: string; scope_type: string }; Returns: Json },
-"submit_attempt": { Args: { answer_duration_ms?: number; answer_md: string; attempt_kind?: string; client_key: string; parent_attempt_id?: string; question_version_id: string; session_id: string }; Returns: Json },
-"submit_self_evaluation": { Args: { attempt_id: string; grade: string; reason?: string; ticks?: Json }; Returns: Json },
-"catalog_facets":
+            "catalog_facets":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"end_session":
+{ Args: { "session_id": string }; Returns: Json
+                           },
+"finalize_attempt":
+{ Args: { "p_attempt_id": string,"p_config_version": string,"p_expected_version": number,"p_final_evaluation_id": string,"p_transition": Json,"p_user_id": string }; Returns: Json
+                           },
+"get_settings":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
 "import_catalog":
@@ -334,11 +469,38 @@ isOneToOne: false
 "mark_concept_exposed":
 { Args: { "concept_id": string }; Returns: undefined
                            },
+"next_questions":
+{ Args: { "session_id": string }; Returns: Json
+                           },
+"practice_scopes":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"record_ai_evaluation":
+{ Args: { "p_attempt_id": string,"p_evaluation": Json,"p_user_id": string }; Returns: Json
+                           },
+"reveal_reference":
+{ Args: { "attempt_id": string }; Returns: Json
+                           },
 "search_catalog":
 { Args: { "after"?: string,"category_id"?: string,"domain_id"?: string,"page_size"?: number,"q"?: string }; Returns: Json
                            },
 "service_profile":
 { Args: { "provider"?: string,"service_slug": string }; Returns: Json
+                           },
+"session_state":
+{ Args: { "session_id": string }; Returns: Json
+                           },
+"start_session":
+{ Args: { "scope_id"?: string,"scope_type": string }; Returns: Json
+                           },
+"submit_attempt":
+{ Args: { "answer_duration_ms"?: number,"answer_md": string,"attempt_kind"?: string,"client_key": string,"parent_attempt_id"?: string,"question_version_id": string,"session_id": string }; Returns: Json
+                           },
+"submit_self_evaluation":
+{ Args: { "attempt_id": string,"grade": string,"reason"?: string,"ticks"?: Json }; Returns: Json
+                           },
+"update_settings":
+{ Args: { "ai_grading_enabled": boolean,"daily_new_limit": number,"daily_review_limit": number,"default_eval_mode": string,"timezone": string }; Returns: Json
                            }
           }
           Enums: {
