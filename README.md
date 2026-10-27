@@ -6,7 +6,7 @@ starting with the AWS Solutions Architect Associate (SAA) exam.
 > **"The foundation: every service, as muscle memory."**
 > Accurate knowledge → Active recall → Targeted correction → Spaced repetition → Architectural application.
 
-**Status:** Phase 1 (service library) complete. The library has 10 AI-drafted services awaiting review; practice arrives in Phase 2. See the [roadmap](docs/implementation/ROADMAP.md).
+**Status:** Phase 2 (active recall) complete on branch `phase-2/active-recall`: answer from memory, AI or self grading, corrections, and spaced-repetition scheduling. Practice uses published content only; the 10 seed services are AI-drafted and awaiting review. See the [roadmap](docs/implementation/ROADMAP.md).
 
 ## Stack
 
@@ -60,16 +60,17 @@ space keeps it out of history on most bash setups.
 
 ## Common commands
 
-| Command                    | What it does                                            |
-| -------------------------- | ------------------------------------------------------- |
-| `npm run check`            | Lint, format check, typecheck, unit + component tests   |
-| `npm run test:db`          | pgTAP database tests (local Supabase)                   |
-| `npm run test:int`         | Integration tests against local Supabase                |
-| `npm run test:e2e`         | Playwright end-to-end tests                             |
-| `npm run check:deno`       | Type-check Edge Functions with Deno                     |
-| `npm run db:types`         | Regenerate `src/lib/database.types.ts`                  |
-| `npm run catalog:validate` | Validate `content/catalog`                              |
-| `npm run catalog:import`   | Load `content/catalog` into local Supabase (idempotent) |
+| Command                    | What it does                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `npm run check`            | Lint, format check, typecheck, unit + component tests                        |
+| `npm run test:db`          | pgTAP database tests (local Supabase)                                        |
+| `npm run test:int`         | Integration tests against local Supabase                                     |
+| `npm run test:e2e`         | Playwright end-to-end tests                                                  |
+| `npm run check:deno`       | Type-check Edge Functions with Deno                                          |
+| `npm run db:types`         | Regenerate `src/lib/database.types.ts`                                       |
+| `npm run catalog:validate` | Validate `content/catalog`                                                   |
+| `npm run catalog:import`   | Load `content/catalog` into local Supabase (idempotent)                      |
+| `npm run ai:calibrate`     | Check Claude grading against the calibration set (needs `ANTHROPIC_API_KEY`) |
 
 ## Documentation
 

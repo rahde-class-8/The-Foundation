@@ -21,13 +21,14 @@ type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 /** Claude grader using structured outputs, validated again by the core schema (ADR-0004). */
 export class AnthropicEvaluationProvider implements EvaluationProvider {
   readonly id = 'anthropic';
+  readonly model: string;
+  private readonly effort: Effort;
   private readonly client: Anthropic;
 
-  constructor(
-    readonly model: string,
-    private readonly effort: Effort,
-    apiKey: string,
-  ) {
+  // Plain fields (no parameter properties) so Node can run this file directly (scripts/calibrate.ts).
+  constructor(model: string, effort: Effort, apiKey: string) {
+    this.model = model;
+    this.effort = effort;
     // Retries and timeouts are owned by evaluateWithPolicy.
     this.client = new Anthropic({ apiKey, maxRetries: 0 });
   }

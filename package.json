@@ -30,7 +30,8 @@
     "db:create-owner": "node scripts/create-owner.ts",
     "env:local": "node scripts/write-local-env.ts",
     "catalog:validate": "node scripts/catalog-validate.ts",
-    "catalog:import": "node scripts/catalog-import.ts"
+    "catalog:import": "node scripts/catalog-import.ts",
+    "ai:calibrate": "node scripts/calibrate.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",

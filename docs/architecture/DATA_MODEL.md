@@ -451,3 +451,17 @@ Implemented in `supabase/migrations/20261028000100`–`…0600`. Differences fro
 | Helpers live in a non-exposed `private` schema | `is_owner()`, `trust_tier()`, search query builder, triggers |
 | RLS is enabled, not forced | Table owners (migrations, SECURITY DEFINER functions) bypass RLS by design; clients never connect as owners |
 | Baseline migration revokes default grants | Every table and function is granted explicitly (pgTAP guard `000_baseline_privileges`) |
+
+## 11. Implementation notes (Phase 2)
+
+Implemented in `supabase/migrations/20261028100100_learning.sql` and `…100200_practice_rpc.sql`.
+
+| Change | Reason |
+|---|---|
+| No direct write grants or write policies on `user_settings`, `study_sessions`, `attempts`, `evaluations`, `review_events`, `review_state` | All learning writes go through RPCs or service-role functions (ADR-0011); RLS still limits reads to the owner |
+| `user_settings` changed through `update_settings`; timezone checked by trigger `private.validate_timezone` | One validated write path |
+| `practice_scopes()` RPC | Lists only published content the learner can practice |
+| `attempts`: trigger `private.guard_attempt_update` | Answers are immutable; nothing changes after finalize |
+| `evaluations` append-only (`forbid_change`); overrides must reference an evaluation | Audit trail for AI vs human grades |
+| `review_events UNIQUE (user_id, idempotency_key)` | Finalize retries replay instead of double-scheduling |
+| `apply_review_transition` → `finalize_attempt` | Finalize, event, and state update in one transaction |

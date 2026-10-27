@@ -44,9 +44,19 @@ Liveness check: `curl http://127.0.0.1:54321/functions/v1/health`.
 | Variable | Where | Purpose |
 |---|---|---|
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | `.env.local` (written by `npm run env:local`) | Public client config, validated at startup by `src/lib/env.ts` |
-| `AI_*` | `supabase/functions/.env` (local) or `supabase secrets set` (remote) | Introduced in Phase 2 |
+| `AI_*`, `ANTHROPIC_API_KEY` | `supabase/functions/.env` (local) or `supabase secrets set` (remote) | AI grading; see below |
 
 Never put the service-role key or AI keys in any `VITE_*` variable. CI fails the build if one appears in `dist/`.
+
+## AI grading
+By default the local stack grades with a deterministic **mock** grader, so no key is needed. To grade with Claude:
+
+1. `cp supabase/functions/.env.example supabase/functions/.env` and set `ANTHROPIC_API_KEY`.
+2. Serve the functions with that file: `npx supabase functions serve --env-file supabase/functions/.env`.
+3. Optionally check grading quality first: `ANTHROPIC_API_KEY=… npm run ai:calibrate` (30 calls; costs a little).
+
+`AI_MONTHLY_BUDGET_USD` and `AI_RATE_LIMIT_PER_HOUR` cap spending. When grading fails or is off, you grade yourself.
+`supabase/functions/.env` is git-ignored; never commit it.
 
 ## Everyday commands
 See the table in the root `README.md`.
