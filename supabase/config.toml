@@ -225,7 +225,9 @@ web3 = 30
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
-enable_signup = false
+# Note: in the CLI this toggles the email provider itself, so it must stay true for password sign-in.
+# Registration is blocked by the global [auth] enable_signup = false above.
+enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
