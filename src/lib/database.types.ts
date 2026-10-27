@@ -213,6 +213,58 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"misconception_occurrences": {
+                  Row: {
+                    "attempt_id": string,"created_at": string,"evaluation_id": string,"excerpt": string | null,"misconception_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempt_id": string,"created_at"?: string,"evaluation_id": string,"excerpt"?: string | null,"misconception_id": string,"user_id": string
+                  }
+                  Update: {
+                    "attempt_id"?: string,"created_at"?: string,"evaluation_id"?: string,"excerpt"?: string | null,"misconception_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "misconception_occurrences_attempt_id_fkey"
+      columns: ["attempt_id"]
+isOneToOne: false
+      referencedRelation: "attempts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "misconception_occurrences_evaluation_id_fkey"
+      columns: ["evaluation_id"]
+isOneToOne: false
+      referencedRelation: "evaluations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "misconception_occurrences_misconception_id_fkey"
+      columns: ["misconception_id"]
+isOneToOne: false
+      referencedRelation: "misconceptions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"misconceptions": {
+                  Row: {
+                    "concept_id": string,"correction_md": string | null,"created_at": string,"first_seen_at": string,"id": string,"last_seen_at": string,"occurrence_count": number,"resolved_at": string | null,"slug": string,"statement_md": string,"status": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "concept_id": string,"correction_md"?: string | null,"created_at"?: string,"first_seen_at": string,"id"?: string,"last_seen_at": string,"occurrence_count"?: number,"resolved_at"?: string | null,"slug": string,"statement_md": string,"status"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "concept_id"?: string,"correction_md"?: string | null,"created_at"?: string,"first_seen_at"?: string,"id"?: string,"last_seen_at"?: string,"occurrence_count"?: number,"resolved_at"?: string | null,"slug"?: string,"statement_md"?: string,"status"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "misconceptions_concept_id_fkey"
+      columns: ["concept_id"]
+isOneToOne: false
+      referencedRelation: "service_concepts"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"question_versions": {
                   Row: {
                     "content_hash": string,"created_at": string,"id": string,"prompt_md": string,"question_id": string,"reference_answer_md": string,"rubric": NonNullable<Json>,"rubric_schema_version": number,"version": number
@@ -451,11 +503,11 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "catalog_facets":
-{ Args: Record<PropertyKey, never>; Returns: Json
-                           },
-"apply_manual_override":
+            "apply_manual_override":
 { Args: { "p_client_key": string,"p_concept_id": string,"p_due_at": string,"p_expected_version": number,"p_reason": string,"p_user_id": string }; Returns: Json
+                           },
+"catalog_facets":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "concept_history":
 { Args: { "concept_id": string }; Returns: Json
