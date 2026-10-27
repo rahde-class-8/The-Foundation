@@ -83,9 +83,19 @@ computed by core `misconceptions/match.ts` and applied in the same transaction.
 | `apply_manual_override(p_user_id, p_concept_id, p_due_at, p_reason, p_client_key, p_expected_version)` | **Service role only.** Idempotent on `override:{client_key}`; `P0409` on a stale version, `P0002` without a schedule |
 | `set_test_clock(p_user_id, p_offset_seconds)`, `server_now(p_user_id)` | **Service role only**; the test clock works only where the `test_clock` flag is seeded (ADR-0012) |
 
-### `publish_concept(concept_id) → service_concepts row`
-Owner only. Validates required fields, ≥1 citation, citations resolvable, and every published question with a valid rubric.
-Increments `revision` and writes a `concept_revisions` snapshot.
+### Content RPCs *(implemented, Phase 4; `supabase/migrations/20261030100200_content_import_rpc.sql`)*
+
+| RPC | Returns / notes |
+|---|---|
+| `create_upload_source(title, byte_size, sha256)` | `{ sourceId, storagePath, job }`. Rejects `file_too_large`, `duplicate_source`, `rate_limited` (10 per day) before the upload; the file then goes to Storage at `storagePath` |
+| `create_note_source(title, body_md)` | `{ sourceId, job }` (≤ 50,000 characters) |
+| `content_overview()` | `{ isOwner, sources (with latest job), drafts, stale }` for `/content` |
+| `search_passages(q?, source_id?, page_size = 50)` | Passages from the caller's own or shared sources; full-text when `q` is given |
+| `draft_detail(concept_id)` | Owner only: draft fields, domains, cited passages, questions with reference answers and rubrics |
+| `update_draft(concept_id, title, summary_md, explanation_md, limitations_md, domain_ids, questions)` | Owner only; changed questions get a new immutable version (ADR-0006) |
+| `publish_concept(concept_id)` | Owner only. Validates: published service, summary and explanation, ≥ 1 citation, no citation to another user's private passage (CNT-7a), ≥ 1 question, every rubric with a critical point, no placeholder text (`TODO`, `TBD`, `[[…]]`). Publishes the questions, increments the revision, writes `concept_revisions` |
+| `reject_draft(concept_id)` | Owner only; retires the draft |
+| `claim_import_job`, `record_import_progress`, `finish_import_job`, `start_draft_job`, `create_drafts` | **Service role only**, used by `ingest-source` and `generate-drafts` (ADR-0011). A recorded batch releases the job; a job whose call crashed resumes after two minutes |
 
 ## 4. Edge Functions
 
@@ -117,19 +127,24 @@ res: { reviewState: { conceptId, masteryStatus, intervalDays, dueAt, manualDueOv
 - Errors: `validation_failed` (bad date or reason), `not_found` (no schedule yet), `conflict` (changed twice concurrently).
 - A retry with the same `clientKey` returns `replayed: true` and writes no second event (P3-4).
 
-### `POST /ingest-source`
+### `POST /ingest-source` *(implemented, Phase 4)*
 ```ts
-req: { importJobId: string }
-res: { job: { id, status, progressPct, errorCode? } }
+req: { jobId: string; restart?: boolean }
+res: { job: JobView /* id, status, progressPct, passageCount, errorCode, hasMore, … */; busy?: boolean }
 ```
-Processes up to N pages per invocation. The SPA re-invokes while `status = 'running'` and `cursor` is present (client-driven continuation; no background queue needed in the MVP).
+- One batch per call: at most 50 pages or about 1 s of extraction (ADR-0001 spike). The SPA calls again while `job.hasMore`.
+- First batch: size and `%PDF-` magic bytes, SHA-256 against other sources, then page count. Failures finish the job with a
+  typed `errorCode` (CONTENT_GOVERNANCE §5) and delete the stored file.
+- `restart: true` re-runs a finished job; passages are deduplicated by hash (P4-1).
 
-### `POST /generate-drafts`
+### `POST /generate-drafts` *(implemented, Phase 4)*
 ```ts
-req: { passageIds: string[] /* 1..20, same user */; serviceId: string; maxConcepts?: number /* ≤5 */ }
-res: { job: { id, status }, drafts: { conceptId, title, questionIds: string[] }[] }
+req: { passageIds: string[] /* 1..20, own or shared */; serviceId: string; maxConcepts?: number /* 1..5, default 3 */ }
+res: { job: JobView, drafts: { conceptId, title, questionCount }[], rejected: { title, reason }[] }
 ```
-All created rows have `status = 'draft'` and `origin = 'ai_draft'`.
+- Owner only. All created rows are private with `status = 'draft'` and `origin = 'ai_draft'`.
+- Drafts citing passages that were not selected are rejected; if none remain the job fails with `citation_mismatch`.
+- AI errors finish the job with `ai_unavailable` or `ai_invalid_response`. Locally the mock drafter is used.
 
 ## 5. Client data-layer conventions
 

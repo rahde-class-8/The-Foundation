@@ -479,3 +479,16 @@ Implemented in `supabase/migrations/20261029100100_weak_box.sql` and `…100200_
 | `private.test_clock`, `private.environment_flags`, `private.now_for(uid)` | Per-learner test clock (ADR-0012); learner functions read time through it |
 | `private.cold_attempt_facts` view and `private.priority_score()` | Shared building blocks of `due_reviews` and `dashboard_summary`; not exposed through the API |
 | Indexes `review_events_override_idx`, `attempts_finalized_idx`, `misconceptions_active_idx` | Recent activity, dashboard, and Weak Box lookups |
+
+## 13. Implementation notes (Phase 4)
+
+Implemented in `supabase/migrations/20261030100100_content_import.sql` and `…100200_content_import_rpc.sql`.
+
+| Change | Reason |
+|---|---|
+| `import_jobs` adds `params`, `result`, and `passage_count`; `error_code` is a CHECK-listed enum | Draft jobs keep their input and output; the UI shows counts and typed errors |
+| `content_sources` CHECKs: user sources have no catalog key or URL, notes have a body, uploads use `{owner_id}/{id}.pdf` | User-type rules from DATA_MODEL §4.2 enforced in the database |
+| Storage bucket `sources` (private, 20 MB, `application/pdf`) with policies: insert only to the caller's own pending upload path, read only own folder | SECURITY §6; no update or delete by learners |
+| A failed upload clears its `sha256` | The same file may be uploaded again after fixing it |
+| Drafts are private (`visibility = 'private'`, `managed_by = 'app'`) and excluded from `search_catalog` and `service_profile` | P4-3; drafts are reviewed on `/content` |
+| `private.question_hash()` | Same content hash as the catalog import for app-created question versions |

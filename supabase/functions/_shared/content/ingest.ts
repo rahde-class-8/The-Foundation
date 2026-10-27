@@ -6,6 +6,7 @@ import {
   type ImportErrorCode,
 } from '../core/content/limits.ts';
 import {
+  cleanText,
   initialSegmentState,
   segmentPages,
   type PageText,
@@ -58,7 +59,7 @@ export async function ingestSource(
 
   if (source.sourceType === 'user_note') {
     const { passages } = segmentPages(
-      [{ page: null, text: source.noteBodyMd ?? '' }],
+      [{ page: null, text: cleanText(source.noteBodyMd ?? '') }],
       initialSegmentState(),
       true,
     );
@@ -109,7 +110,7 @@ export async function ingestSource(
     } catch {
       return fail('pdf_corrupt', `page ${nextPage} could not be read`);
     }
-    pages.push({ page: nextPage, text });
+    pages.push({ page: nextPage, text: cleanText(text) });
     nextPage += 1;
   }
 

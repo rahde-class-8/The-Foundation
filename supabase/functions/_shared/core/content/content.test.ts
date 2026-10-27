@@ -1,5 +1,6 @@
 import { checkPageCount, hasPdfMagic, precheckUpload, sha256Hex } from './limits.ts';
 import {
+  cleanText,
   MAX_PASSAGE_CHARS,
   headingOf,
   initialSegmentState,
@@ -54,6 +55,10 @@ function expectTraceable(pages: readonly PageText[], passages: Passage[]) {
 }
 
 describe('segmentation (CNT-4)', () => {
+  it('normalizes extracted text to NFC without control characters', () => {
+    expect(cleanText('Cafe\u0301\u0000 \u0007ok\tline\n')).toBe('Caf\u00e9 ok\tline\n');
+  });
+
   it('detects headings', () => {
     expect(headingOf('## Visibility timeout')).toBe('Visibility timeout');
     expect(headingOf('Dead-letter queues')).toBe('Dead-letter queues');

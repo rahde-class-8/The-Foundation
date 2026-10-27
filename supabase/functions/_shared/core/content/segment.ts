@@ -37,6 +37,12 @@ export const initialSegmentState = (): SegmentState => ({
 
 const HEADING_MAX = 80;
 
+/** Unicode NFC with control characters removed (SECURITY §6); tabs and newlines are kept. */
+export function cleanText(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.normalize('NFC').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+}
+
 /** Markdown headings, or short title-like lines without closing punctuation. */
 export function headingOf(line: string): string | null {
   const trimmed = line.trim();

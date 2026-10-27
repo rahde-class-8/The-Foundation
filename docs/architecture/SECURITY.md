@@ -66,6 +66,9 @@ Rules: `.env.example` is committed without values. CI runs `gitleaks`. The produ
 - Encrypted PDFs, PDFs with zero extractable text (image-only), and parser errors → typed failures. No OCR in the MVP.
 - Objects are stored at `sources/{user_id}/{source_id}.pdf` in a private bucket. Downloads use signed URLs (60 s) with `Content-Disposition: attachment`.
 - Extracted text is normalized (Unicode NFC, control characters stripped) and length-capped per passage.
+- *Implemented in Phase 4:* the type is checked by magic bytes in the browser and again on the server; Storage policies
+  allow an upload only to the caller's own pending source path; files that fail validation are deleted. There is no
+  download feature yet, so signed URLs are not issued.
 
 ## 7. Untrusted content and AI safety
 

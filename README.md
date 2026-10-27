@@ -6,7 +6,7 @@ starting with the AWS Solutions Architect Associate (SAA) exam.
 > **"The foundation: every service, as muscle memory."**
 > Accurate knowledge → Active recall → Targeted correction → Spaced repetition → Architectural application.
 
-**Status:** Phase 3 (Weak Box and dashboard) complete on branch `phase-3/weak-box`: due and overdue reviews ranked by weakness, rescheduling, concept history, recurring misconceptions, and a progress dashboard. Practice uses published content only; the 10 seed services are AI-drafted and awaiting review.
+**Status:** Phase 4 (content import) complete on branch `phase-4/content-import`: upload PDFs and notes, search their passages, draft concepts and questions with AI, and review and publish them. Practice uses published content only; the 10 seed services are AI-drafted and awaiting review.
 
 ## Stack
 

@@ -48,8 +48,8 @@ stateDiagram-v2
 
 | Stage | Checks | Error codes |
 |---|---|---|
-| Upload | Size ≤ 20 MB, magic bytes `%PDF-`, ≤10 uploads/day, duplicate sha256 | `file_too_large`, `unsupported_type`, `duplicate_source`, `rate_limited` |
-| Parse | Not encrypted, ≥1 page, ≤300 pages | `pdf_encrypted`, `pdf_corrupt`, `pdf_too_many_pages` |
+| Upload | Size ≤ 20 MB, magic bytes `%PDF-`, ≤10 uploads/day, duplicate sha256, file present | `file_too_large`, `unsupported_type`, `duplicate_source`, `rate_limited`, `upload_missing` |
+| Parse | Not encrypted, ≥1 page, ≤300 pages | `pdf_encrypted`, `pdf_corrupt`, `pdf_empty`, `pdf_too_many_pages` |
 | Extract | Text found on ≥1 page | `no_extractable_text` (image-only; OCR is out of scope) |
 | Segment | Passages of 500–2,000 chars on paragraph or heading boundaries; page and offset metadata; dedupe by hash | `segmentation_failed` |
 | Generate | Passages wrapped as untrusted data; output schema-valid; citation ids ⊆ input ids | `ai_unavailable`, `ai_invalid_response`, `citation_mismatch` |
@@ -81,3 +81,11 @@ The Phase 1 seed (10 services) was drafted by AI without access to AWS documenta
 sources by **paraphrase** ("Summary of source (not a quotation)" in the UI), and no source is verified yet. The owner's
 publishing steps are in `content/catalog/README.md`. Until content is published, the library shows it to the owner with
 "In review" badges, and practice (Phase 2) will not use it.
+
+## 10. Implementation notes (Phase 4)
+- Error codes `pdf_empty` (zero pages) and `upload_missing` (the stored file is gone) were added to the table above.
+- Files that fail validation are deleted at once rather than quarantined for 7 days; nothing in a failed file is kept.
+- Passages are exact slices of the extracted text (Unicode NFC, control characters removed), 500–2,000 characters,
+  split at headings and blank lines, with page range, character offsets, nearest heading, and a SHA-256 hash.
+- Drafting prompt v1 is `supabase/functions/_shared/ai/prompts/drafts/v1.ts`. The review checklist in §4 is shown on
+  `/content/drafts/:id`; approval is disabled until every item is ticked.

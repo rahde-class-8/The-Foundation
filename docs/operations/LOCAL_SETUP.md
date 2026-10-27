@@ -58,6 +58,14 @@ By default the local stack grades with a deterministic **mock** grader, so no ke
 `AI_MONTHLY_BUDGET_USD` and `AI_RATE_LIMIT_PER_HOUR` cap spending. When grading fails or is off, you grade yourself.
 `supabase/functions/.env` is git-ignored; never commit it.
 
+## Content import (Phase 4)
+`/content` uploads PDFs to the local Storage bucket `sources` and turns them into passages with the `ingest-source`
+function. AI drafts use the same provider settings as grading: the mock drafter by default, Claude when
+`supabase/functions/.env` sets `AI_PROVIDER=anthropic` and a key. Generating, reviewing, and publishing drafts needs the
+owner account. If an upload stops (for example, you close the tab), open `/content` and press **Resume**.
+
+To regenerate the PDF test fixtures: `pip install reportlab pypdf && python3 scripts/fixtures/make_pdfs.py`.
+
 ## Test clock (Phase 3)
 Integration and E2E tests move a throwaway learner's clock forward to check spaced repetition (ADR-0012). This needs
 the `test_clock` flag that `supabase/seed.sql` inserts. Databases created before Phase 3 do not have it: run
