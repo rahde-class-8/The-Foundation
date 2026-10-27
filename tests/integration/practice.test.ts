@@ -127,7 +127,12 @@ describe.runIf(ownerEmail && ownerPassword)('practice over the API', () => {
         })
       ).data,
     );
-    expect(finalized.reviewState?.intervalDays).toBe(1);
+    // The concept was just seen in the previous test, so this attempt is not cold: a miss pulls the
+    // review to tomorrow without shortening the interval (SPACED_REPETITION §5, SR-9).
+    expect(attempt.isCold).toBe(false);
+    const dueInMs = new Date(finalized.reviewState?.dueAt ?? 0).getTime() - Date.now();
+    expect(dueInMs).toBeGreaterThan(0);
+    expect(dueInMs).toBeLessThanOrEqual(48 * 3600 * 1000);
   });
 
   it('records an invalid AI response without losing the attempt (REC-4a)', async () => {
