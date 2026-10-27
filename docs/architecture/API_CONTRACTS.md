@@ -69,13 +69,19 @@ SECURITY DEFINER. Called when the learner expands a concept's explanation in the
 
 ### `apply_review_transition(...)`
 Implemented as `finalize_attempt` (above), called with the service role by `finalize-attempt` (ADR-0011).
+Since Phase 3 it takes `p_misconceptions jsonb` (`{ record: [{slug, statementMd, correctionMd, excerpt}], resolve: [id] }`),
+computed by core `misconceptions/match.ts` and applied in the same transaction.
 
-### `due_reviews(window text = 'today' | 'overdue' | 'upcoming', limit int = 50) → DueReview[]`
-Uses `user_settings.timezone`. Ordered by priority (SPACED_REPETITION §6).
+### Weak Box and dashboard RPCs *(implemented, Phase 3; `supabase/migrations/20261029100200_weak_box_rpc.sql`)*
 
-### `concept_history(concept_id) → { events: ReviewEvent[], attempts: AttemptSummary[] }`
-
-### `dashboard_summary(certification_id) → DashboardSummary` (definitions: MASTERY_MODEL §6)
+| RPC | Returns / notes |
+|---|---|
+| `due_reviews(due_window = 'today', page_size = 100)` | `{ now, timezone, today, counts: {today, overdue, upcoming}, items: DueReview[] }`. Windows by local day in `user_settings.timezone`; today and overdue ordered by priority desc, due date, concept id (SPACED_REPETITION §6); upcoming by due date. `page_size` is clamped to 1–500. (`window` is a reserved word in SQL, hence `due_window`.) |
+| `concept_history(concept_id)` | `{ concept, state, events, attempts, misconceptions }`, events and attempts oldest first (WB-4) |
+| `recurring_misconceptions(include_single = false)` | Active misconceptions with their concept; recurring ones (≥ 2 attempts) first |
+| `dashboard_summary(certification_id?)` | DASH-1…7 figures (MASTERY_MODEL §6); defaults to the learner's active certification, then the first active one |
+| `apply_manual_override(p_user_id, p_concept_id, p_due_at, p_reason, p_client_key, p_expected_version)` | **Service role only.** Idempotent on `override:{client_key}`; `P0409` on a stale version, `P0002` without a schedule |
+| `set_test_clock(p_user_id, p_offset_seconds)`, `server_now(p_user_id)` | **Service role only**; the test clock works only where the `test_clock` flag is seeded (ADR-0012) |
 
 ### `publish_concept(concept_id) → service_concepts row`
 Owner only. Validates required fields, ≥1 citation, citations resolvable, and every published question with a valid rubric.
@@ -102,11 +108,14 @@ res: { reviewState: { conceptId, dueAt, intervalDays, masteryStatus }, event: { 
 - Non-cold initial attempts (e.g. a re-practice of an already-due-later concept the same day): recorded, with `event_type = graded`, but the scheduler applies the *non-cold rule* (SPACED_REPETITION §5).
 - Idempotency: `graded:{attemptId}`. A retry returns `replayed: true`.
 
-### `POST /override-schedule`
+### `POST /override-schedule` *(implemented, Phase 3)*
 ```ts
 req: { conceptId: string; dueOn: string /* YYYY-MM-DD local */; reason: string; clientKey: string }
-res: { reviewState, event: { id, eventType: 'manual_override' }, replayed: boolean }
+res: { reviewState: { conceptId, masteryStatus, intervalDays, dueAt, manualDueOverride }, event: { id, eventType: 'manual_override' }, replayed: boolean }
 ```
+- `dueOn` must be today or later (learner's local date) and within 365 days; `reason` 1–300 characters.
+- Errors: `validation_failed` (bad date or reason), `not_found` (no schedule yet), `conflict` (changed twice concurrently).
+- A retry with the same `clientKey` returns `replayed: true` and writes no second event (P3-4).
 
 ### `POST /ingest-source`
 ```ts

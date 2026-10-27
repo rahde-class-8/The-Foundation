@@ -465,3 +465,17 @@ Implemented in `supabase/migrations/20261028100100_learning.sql` and `…100200_
 | `evaluations` append-only (`forbid_change`); overrides must reference an evaluation | Audit trail for AI vs human grades |
 | `review_events UNIQUE (user_id, idempotency_key)` | Finalize retries replay instead of double-scheduling |
 | `apply_review_transition` → `finalize_attempt` | Finalize, event, and state update in one transaction |
+
+## 12. Implementation notes (Phase 3)
+
+Implemented in `supabase/migrations/20261029100100_weak_box.sql` and `…100200_weak_box_rpc.sql`.
+
+| Change | Reason |
+|---|---|
+| `misconceptions` adds `resolved_at`; `misconception_occurrences` adds `attempt_id`, `user_id`, and `UNIQUE (misconception_id, attempt_id)` | "Recurring" means diagnosed on ≥ 2 distinct attempts (WB-6a); occurrences are scoped by RLS like other learner rows |
+| Misconceptions come from the latest completed AI evaluation of an initial attempt, unless the learner overrode the grade to a Pass | The learner disputed that diagnosis |
+| Resolution (2 consecutive cold passes, no re-diagnosis since last seen) is decided by the core at finalize and applied by `finalize_attempt` | One transaction with the review transition |
+| Backfill from Phase 2 `evaluations.feedback` | Slugs were already normalized when stored; backfilled rows start active |
+| `private.test_clock`, `private.environment_flags`, `private.now_for(uid)` | Per-learner test clock (ADR-0012); learner functions read time through it |
+| `private.cold_attempt_facts` view and `private.priority_score()` | Shared building blocks of `due_reviews` and `dashboard_summary`; not exposed through the API |
+| Indexes `review_events_override_idx`, `attempts_finalized_idx`, `misconceptions_active_idx` | Recent activity, dashboard, and Weak Box lookups |

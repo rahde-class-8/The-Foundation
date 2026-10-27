@@ -58,6 +58,12 @@ By default the local stack grades with a deterministic **mock** grader, so no ke
 `AI_MONTHLY_BUDGET_USD` and `AI_RATE_LIMIT_PER_HOUR` cap spending. When grading fails or is off, you grade yourself.
 `supabase/functions/.env` is git-ignored; never commit it.
 
+## Test clock (Phase 3)
+Integration and E2E tests move a throwaway learner's clock forward to check spaced repetition (ADR-0012). This needs
+the `test_clock` flag that `supabase/seed.sql` inserts. Databases created before Phase 3 do not have it: run
+`npx supabase db reset` once (this also deletes your local study data and accounts; re-run `db:create-owner` and
+`catalog:import` afterwards). Test learners use `@example.test` addresses and never see your data.
+
 ## Everyday commands
 See the table in the root `README.md`.
 

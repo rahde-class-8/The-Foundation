@@ -96,3 +96,11 @@ The default window is the last 30 days. "Finalized cold attempt" means `attempt_
 | Recurring misconceptions | `misconceptions.status='active' AND occurrence_count ≥ 2` |
 | Recent activity | Last 20 of: finalized attempts, overrides, published content, sessions |
 | **Readiness (estimate)** | Σ over domains of `weight_pct/100 × coverage × retention₇₊`, where retention₇₊ is the domain's cold accuracy on reviews with an interval ≥ 7 days (it falls back to overall domain accuracy when n < 10). Always labeled **"Estimate — not a prediction of exam results."** It is shown with sample sizes and is hidden until ≥50 finalized cold attempts exist. |
+
+### Implementation notes (Phase 3)
+- Windowed (last 30 local days): cold-recall accuracy, retention by interval, dimension accuracy, domain performance, completed sessions.
+  All-time: domain coverage, readiness (including its retention₇₊ term), mastery distribution.
+- Accuracy over time is shown as eight weekly buckets ending today (local days).
+- "Days since the previous cold review" is the difference between local calendar dates; same-day reviews fall in the `1` bucket.
+- Coverage, readiness, mastery distribution, and "new available" count concepts mapped to the selected certification; accuracy, due counts, and weakest concepts include every practicable concept.
+- Ratios are rounded to 4 decimals in both implementations; `tests/integration/analytics-parity.test.ts` compares them (P3-1).
