@@ -10,6 +10,6 @@ const store = createPracticeStore(serviceClient(env));
 Deno.serve((request) =>
   handle(request, async (body) => {
     const userId = await authenticate(request, env);
-    return finalizeAttempt({ store, now: () => new Date() }, userId, body);
+    return finalizeAttempt({ store }, userId, body);
   }),
 );

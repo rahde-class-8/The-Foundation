@@ -1,11 +1,20 @@
 import { FinalizeRequestSchema, type FinalizeResponse } from '../core/contracts/practice.ts';
+import { EvaluationResultSchema } from '../core/grading/evaluation.ts';
 import { selectFinalEvaluation } from '../core/grading/final.ts';
+import { RubricV1Schema } from '../core/grading/rubric.ts';
+import { matchMisconceptions, shouldResolve } from '../core/misconceptions/match.ts';
 import { resolveConfig } from '../core/scheduler/config.ts';
-import { initialSnapshot, next } from '../core/scheduler/next.ts';
+import { initialSnapshot, next, type ReviewSnapshot } from '../core/scheduler/next.ts';
 import { ApiError } from '../http/errors.ts';
-import { VersionConflictError, type FinalizeResult, type PracticeStore } from './store.ts';
+import {
+  VersionConflictError,
+  type AttemptContext,
+  type FinalizeResult,
+  type MisconceptionChanges,
+  type PracticeStore,
+} from './store.ts';
 
-export type FinalizeDeps = { store: PracticeStore; now: () => Date };
+export type FinalizeDeps = { store: PracticeStore };
 
 /**
  * POST /finalize-attempt (API_CONTRACTS §4): freezes the grade and schedules the concept once.
@@ -48,10 +57,13 @@ export async function finalizeAttempt(
             stored ?? initialSnapshot(config),
             { kind: 'graded', grade, isCold: context.attempt.isCold },
             config,
-            deps.now(),
+            await deps.store.serverNow(userId),
             context.settings.timezone,
           ).next
         : null;
+    const misconceptions = transition
+      ? await misconceptionChanges(deps.store, userId, context, finalEvaluationId, transition)
+      : null;
 
     try {
       const result = await deps.store.finalizeAttempt({
@@ -61,6 +73,7 @@ export async function finalizeAttempt(
         expectedVersion: stored?.version ?? 0,
         transition,
         configVersion: transition ? config.version : null,
+        misconceptions,
       });
       return toResponse(result);
     } catch (error) {
@@ -77,6 +90,58 @@ export async function finalizeAttempt(
     }
   }
   throw new ApiError('conflict', 'Could not finalize. Reload and try again.', true);
+}
+
+/**
+ * Misconceptions from the latest completed AI evaluation (WB-6), unless the learner overrode the
+ * grade to a Pass, plus active ones a cold Pass resolves (DATA_MODEL §4.3).
+ */
+async function misconceptionChanges(
+  store: PracticeStore,
+  userId: string,
+  context: AttemptContext,
+  finalEvaluationId: string,
+  transition: ReviewSnapshot,
+): Promise<MisconceptionChanges> {
+  const final = context.evaluations.find((e) => e.id === finalEvaluationId);
+  const ai = context.evaluations
+    .filter((e) => e.source === 'ai' && e.status === 'completed')
+    .at(-1);
+  const feedback = EvaluationResultSchema.safeParse(ai?.feedback);
+  const rubric = RubricV1Schema.safeParse(context.question.rubric);
+  const disputed = final?.source !== 'ai' && final?.grade === 'pass';
+  const { existing, coldPassTimes } = await store.getMisconceptionContext(
+    userId,
+    context.attempt.conceptId,
+  );
+
+  const record =
+    feedback.success && !disputed
+      ? matchMisconceptions(
+          feedback.data.misconceptions,
+          rubric.success ? rubric.data : { knownMisconceptions: [] },
+          existing,
+          context.attempt.answerMd,
+        )
+      : [];
+  const diagnosed = new Set(record.map((m) => m.slug));
+  const coldPass = context.attempt.isCold && final?.grade === 'pass';
+  const resolve = coldPass
+    ? existing
+        .filter(
+          (m) =>
+            m.status === 'active' &&
+            shouldResolve({
+              consecutiveColdPasses: transition.consecutiveColdPasses,
+              // Earlier cold passes since the misconception was last seen, plus this one.
+              coldPassesSinceLastSeen:
+                coldPassTimes.filter((t) => Date.parse(t) > Date.parse(m.lastSeenAt)).length + 1,
+              diagnosedNow: diagnosed.has(m.slug),
+            }),
+        )
+        .map((m) => m.id)
+    : [];
+  return { record, resolve };
 }
 
 function toResponse(result: FinalizeResult): FinalizeResponse {

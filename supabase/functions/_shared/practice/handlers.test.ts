@@ -6,6 +6,7 @@ import { ApiError } from '../http/errors.ts';
 import { evaluateAttempt } from './evaluate.ts';
 import { FakeStore } from './fake-store.ts';
 import { finalizeAttempt } from './finalize.ts';
+import { overrideSchedule } from '../reviews/override.ts';
 import type { AttemptContext } from './store.ts';
 
 const USER = '00000000-0000-4000-8000-0000000000a1';
@@ -291,5 +292,162 @@ describe('finalizeAttempt', () => {
     ).rejects.toMatchObject({
       code: 'conflict',
     });
+  });
+});
+
+describe('finalizeAttempt misconceptions (WB-6)', () => {
+  it('records misconceptions from the AI grade', async () => {
+    const { store, deps } = setup('Lambda runs forever [[mock:misconception:unlimited-duration]]');
+    const { evaluation } = await evaluateAttempt(deps, USER, { attemptId: ATTEMPT });
+
+    await finalizeAttempt(deps, USER, { attemptId: ATTEMPT, finalEvaluationId: evaluation.id });
+
+    expect(store.finalizeCalls[0]?.misconceptions).toEqual({
+      record: [expect.objectContaining({ slug: 'unlimited-duration', existingId: null })],
+      resolve: [],
+    });
+  });
+
+  it('ignores the AI diagnosis when the learner overrides the grade to a Pass', async () => {
+    const { store, deps } = setup('Lambda runs forever [[mock:misconception:unlimited-duration]]');
+    await evaluateAttempt(deps, USER, { attemptId: ATTEMPT });
+    store.contexts
+      .get(ATTEMPT)!
+      .evaluations.push({ ...selfEvaluation('pass', 59), source: 'override' });
+
+    await finalizeAttempt(deps, USER, {
+      attemptId: ATTEMPT,
+      finalEvaluationId: selfEvaluation('pass', 59).id,
+    });
+
+    expect(store.finalizeCalls[0]?.misconceptions?.record).toEqual([]);
+  });
+
+  it('resolves an active misconception on the second cold pass since it was seen', async () => {
+    const { store, deps } = setup('x');
+    store.contexts.get(ATTEMPT)!.evaluations.push(selfEvaluation('pass'));
+    store.states.set(CONCEPT, {
+      masteryStatus: 'reviewing',
+      intervalDays: 3,
+      ease: 2.6,
+      consecutiveColdPasses: 1,
+      lapseCount: 0,
+      preLapseIntervalDays: null,
+      totalColdAttempts: 2,
+      lastColdGrade: 'pass',
+      lastReviewedAt: '2026-10-24T16:00:00Z',
+      dueAt: '2026-10-27T04:00:00Z',
+      manualDueOverride: false,
+      version: 2,
+    });
+    const misconception = {
+      id: '00000000-0000-4000-8000-00000000f001',
+      slug: 'unlimited-duration',
+      statementMd: 'Lambda runs forever.',
+      status: 'active' as const,
+      lastSeenAt: '2026-10-20T16:00:00Z',
+    };
+    store.misconceptions = { existing: [misconception], coldPassTimes: ['2026-10-24T16:00:00Z'] };
+
+    await finalizeAttempt(deps, USER, {
+      attemptId: ATTEMPT,
+      finalEvaluationId: selfEvaluation('pass').id,
+    });
+    expect(store.finalizeCalls[0]?.misconceptions?.resolve).toEqual([misconception.id]);
+  });
+
+  it('does not resolve after a single cold pass', async () => {
+    const { store, deps } = setup('x');
+    store.contexts.get(ATTEMPT)!.evaluations.push(selfEvaluation('pass'));
+    store.misconceptions = {
+      existing: [
+        {
+          id: '00000000-0000-4000-8000-00000000f001',
+          slug: 'unlimited-duration',
+          statementMd: 'Lambda runs forever.',
+          status: 'active',
+          lastSeenAt: '2026-10-20T16:00:00Z',
+        },
+      ],
+      coldPassTimes: [],
+    };
+
+    await finalizeAttempt(deps, USER, {
+      attemptId: ATTEMPT,
+      finalEvaluationId: selfEvaluation('pass').id,
+    });
+    expect(store.finalizeCalls[0]?.misconceptions?.resolve).toEqual([]);
+  });
+});
+
+describe('overrideSchedule (WB-3, P3-4)', () => {
+  const KEY = '00000000-0000-4000-8000-00000000e001';
+  const scheduled = (store: FakeStore) =>
+    store.states.set(CONCEPT, {
+      masteryStatus: 'reviewing',
+      intervalDays: 6,
+      ease: 2.6,
+      consecutiveColdPasses: 2,
+      lapseCount: 0,
+      preLapseIntervalDays: null,
+      totalColdAttempts: 2,
+      lastColdGrade: 'pass',
+      lastReviewedAt: '2026-10-21T16:00:00Z',
+      dueAt: '2026-10-27T04:00:00Z',
+      manualDueOverride: false,
+      version: 3,
+    });
+
+  it('moves the review to local midnight and keeps the interval', async () => {
+    const store = new FakeStore();
+    scheduled(store);
+    const body = { conceptId: CONCEPT, dueOn: '2026-11-02', reason: 'Exam week', clientKey: KEY };
+
+    const response = await overrideSchedule({ store }, USER, body);
+
+    expect(response).toMatchObject({
+      replayed: false,
+      // America/New_York is back on EST by Nov 2.
+      reviewState: { dueAt: '2026-11-02T05:00:00.000Z', intervalDays: 6, manualDueOverride: true },
+      event: { eventType: 'manual_override' },
+    });
+    const again = await overrideSchedule({ store }, USER, body);
+    expect(again.replayed).toBe(true);
+    expect(again.event.id).toBe(response.event.id);
+  });
+
+  it('retries once after a concurrent change', async () => {
+    const store = new FakeStore();
+    scheduled(store);
+    store.conflictsToThrow = 1;
+    const response = await overrideSchedule({ store }, USER, {
+      conceptId: CONCEPT,
+      dueOn: '2026-10-28',
+      reason: 'Later',
+      clientKey: KEY,
+    });
+    expect(response.replayed).toBe(false);
+  });
+
+  it('rejects past dates, missing reasons, bad input, and unscheduled concepts', async () => {
+    const store = new FakeStore();
+    scheduled(store);
+    const call = (over: Record<string, unknown>) =>
+      overrideSchedule({ store }, USER, {
+        conceptId: CONCEPT,
+        dueOn: '2026-10-28',
+        reason: 'r',
+        clientKey: KEY,
+        ...over,
+      });
+
+    await expect(call({ dueOn: '2026-10-26' })).rejects.toMatchObject({
+      code: 'validation_failed',
+    });
+    await expect(call({ reason: '  ' })).rejects.toMatchObject({ code: 'validation_failed' });
+    await expect(call({ dueOn: 'tomorrow' })).rejects.toMatchObject({ code: 'validation_failed' });
+    await expect(call({ conceptId: '00000000-0000-4000-8000-00000000c999' })).rejects.toMatchObject(
+      { code: 'not_found' },
+    );
   });
 });

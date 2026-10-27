@@ -33,6 +33,7 @@ const words = (text: string) =>
  * Deterministic stand-in grader for local development and tests (never a production default).
  * Marks a rubric point covered when the answer shares most of its key words. Markers in the answer
  * simulate failures: [[mock:timeout]], [[mock:rate-limited]], [[mock:error]], [[mock:invalid]], [[mock:refused]].
+ * [[mock:misconception:<slug>]] diagnoses a misconception with that slug (Weak Box tests).
  */
 export class MockEvaluationProvider implements EvaluationProvider {
   readonly id = 'mock';
@@ -101,7 +102,12 @@ export class MockEvaluationProvider implements EvaluationProvider {
         evidenceQuote: null,
       })),
       incorrectStatements: [],
-      misconceptions: [],
+      misconceptions: [...answer.matchAll(/\[\[mock:misconception:([a-z0-9-]+)\]\]/g)].map((m) => ({
+        knownSlug: null,
+        proposedSlug: m[1] ?? null,
+        statement: `Mock misconception ${m[1] ?? ''}`,
+        correction: 'Mock correction.',
+      })),
       missingSummary:
         missing.length === 0
           ? 'Nothing important is missing.'

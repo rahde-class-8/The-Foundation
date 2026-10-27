@@ -3,6 +3,7 @@ import { EvaluationViewSchema, type EvaluationView } from '../core/contracts/pra
 import { DIMENSIONS, type Dimension } from '../core/grading/rubric.ts';
 import type { ReviewSnapshot } from '../core/scheduler/next.ts';
 import {
+  NotFoundError,
   VersionConflictError,
   type AttemptContext,
   type PracticeStore,
@@ -182,6 +183,71 @@ export function createPracticeStore(db: SupabaseClient): PracticeStore {
       return row ? toState(row) : null;
     },
 
+    async serverNow(userId) {
+      const value = check(await db.rpc('server_now', { p_user_id: userId })) as string;
+      return new Date(value);
+    },
+
+    async getSettings(userId) {
+      const settings = check(
+        await db
+          .from('user_settings')
+          .select('timezone, scheduler_overrides')
+          .eq('user_id', userId)
+          .maybeSingle(),
+      ) as Row | null;
+      return {
+        timezone: String(settings?.timezone ?? 'UTC'),
+        schedulerOverrides: settings?.scheduler_overrides ?? {},
+      };
+    },
+
+    async getMisconceptionContext(userId, conceptId) {
+      const existing = check(
+        await db
+          .from('misconceptions')
+          .select('id, slug, statement_md, status, last_seen_at')
+          .eq('user_id', userId)
+          .eq('concept_id', conceptId),
+      ) as Row[];
+      const passes = check(
+        await db
+          .from('review_events')
+          .select('occurred_at')
+          .eq('user_id', userId)
+          .eq('concept_id', conceptId)
+          .eq('event_type', 'graded')
+          .eq('is_cold', true)
+          .eq('grade', 'pass'),
+      ) as Row[];
+      return {
+        existing: existing.map((row) => ({
+          id: String(row.id),
+          slug: String(row.slug),
+          statementMd: String(row.statement_md),
+          status: row.status === 'resolved' ? 'resolved' : 'active',
+          lastSeenAt: String(row.last_seen_at),
+        })),
+        coldPassTimes: passes.map((row) => String(row.occurred_at)),
+      };
+    },
+
+    async applyOverride(input) {
+      const { data, error } = await db.rpc('apply_manual_override', {
+        p_user_id: input.userId,
+        p_concept_id: input.conceptId,
+        p_due_at: input.dueAt,
+        p_reason: input.reason,
+        p_client_key: input.clientKey,
+        p_expected_version: input.expectedVersion,
+      });
+      if (error?.code === 'P0409') throw new VersionConflictError(error.message);
+      if (error?.code === 'P0002') throw new NotFoundError(error.message);
+      if (error) throw new Error(`database: ${error.message}`);
+      const result = data as { replayed: boolean; state: Row; event: { id: string } };
+      return { replayed: result.replayed, state: toState(result.state), eventId: result.event.id };
+    },
+
     async finalizeAttempt(input) {
       const { data, error } = await db.rpc('finalize_attempt', {
         p_user_id: input.userId,
@@ -190,6 +256,7 @@ export function createPracticeStore(db: SupabaseClient): PracticeStore {
         p_expected_version: input.expectedVersion,
         p_transition: input.transition,
         p_config_version: input.configVersion,
+        p_misconceptions: input.misconceptions,
       });
       if (error?.code === 'P0409') throw new VersionConflictError(error.message);
       if (error) throw new Error(`database: ${error.message}`);

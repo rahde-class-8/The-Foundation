@@ -1,4 +1,5 @@
 import type { EvaluationView } from '../core/contracts/practice.ts';
+import type { ExistingMisconception, MisconceptionMatch } from '../core/misconceptions/match.ts';
 import type { EvaluationResult } from '../core/grading/evaluation.ts';
 import type { Dimension } from '../core/grading/rubric.ts';
 import type { ReviewSnapshot } from '../core/scheduler/next.ts';
@@ -46,6 +47,18 @@ export type FinalizeResult = {
 };
 
 export class VersionConflictError extends Error {}
+export class NotFoundError extends Error {}
+
+export type LearnerSettings = { timezone: string; schedulerOverrides: unknown };
+
+/** What finalize needs to record and resolve misconceptions for one concept. */
+export type MisconceptionContext = {
+  existing: (ExistingMisconception & { lastSeenAt: string })[];
+  /** occurred_at of every cold Pass review event on the concept. */
+  coldPassTimes: string[];
+};
+
+export type MisconceptionChanges = { record: MisconceptionMatch[]; resolve: string[] };
 
 /** Data access for the practice Edge Functions (implemented with the service-role client). */
 export interface PracticeStore {
@@ -57,6 +70,10 @@ export interface PracticeStore {
     record: AiEvaluationRecord,
   ): Promise<EvaluationView>;
   getReviewState(userId: string, conceptId: string): Promise<StoredReviewState | null>;
+  /** The learner's current time on the database clock (the test clock in local stacks). */
+  serverNow(userId: string): Promise<Date>;
+  getSettings(userId: string): Promise<LearnerSettings>;
+  getMisconceptionContext(userId: string, conceptId: string): Promise<MisconceptionContext>;
   finalizeAttempt(input: {
     userId: string;
     attemptId: string;
@@ -64,5 +81,19 @@ export interface PracticeStore {
     expectedVersion: number;
     transition: ReviewSnapshot | null;
     configVersion: string | null;
+    misconceptions: MisconceptionChanges | null;
   }): Promise<FinalizeResult>;
+  /** Throws NotFoundError when the concept has no schedule, VersionConflictError on a stale version. */
+  applyOverride(input: {
+    userId: string;
+    conceptId: string;
+    dueAt: string;
+    reason: string;
+    clientKey: string;
+    expectedVersion: number;
+  }): Promise<{
+    replayed: boolean;
+    state: StoredReviewState & { conceptId: string };
+    eventId: string;
+  }>;
 }
