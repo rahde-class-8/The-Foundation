@@ -1,0 +1,40 @@
+{
+  "description": "Cold answers only, spread over four weeks.",
+  "steps": [
+    {
+      "day": -28,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -27,
+      "concept": "topics",
+      "grade": "miss"
+    },
+    {
+      "day": -26,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -25,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -18,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -10,
+      "concept": "topics",
+      "grade": "partial"
+    },
+    {
+      "day": -2,
+      "concept": "streams",
+      "grade": "miss"
+    }
+  ]
+}

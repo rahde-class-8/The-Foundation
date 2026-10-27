@@ -1,0 +1,48 @@
+{
+  "description": "Non-cold re-practice, corrections, and AI-diagnosed misconceptions.",
+  "steps": [
+    {
+      "day": -12,
+      "concept": "queues",
+      "grade": "miss",
+      "ai": true,
+      "misconception": "push-model"
+    },
+    {
+      "day": -12,
+      "concept": "queues",
+      "grade": "pass",
+      "warm": true
+    },
+    {
+      "day": -11,
+      "concept": "queues",
+      "grade": "partial",
+      "ai": true,
+      "misconception": "push-model",
+      "correction": "pass"
+    },
+    {
+      "day": -9,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -9,
+      "concept": "streams",
+      "grade": "pass",
+      "warm": true
+    },
+    {
+      "day": -5,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -1,
+      "concept": "topics",
+      "grade": "miss",
+      "correction": "partial"
+    }
+  ]
+}

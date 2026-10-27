@@ -14,7 +14,10 @@ describe('catalog test fixtures', () => {
     const service = withPractice.services.find((s) => s.slug === 'practice-fixture');
 
     expect(service?.status).toBe('published');
-    expect(service?.concepts.flatMap((c) => c.questions)).toHaveLength(2);
+    expect(service?.concepts.flatMap((c) => c.questions)).toHaveLength(3);
+    // Streams maps to a second exam domain so domain metrics have two rows (Phase 3).
+    const domains = new Set(service?.concepts.flatMap((c) => c.mappings.map((m) => m.domain)));
+    expect(domains.size).toBe(2);
   });
 
   it('combines with the performance fixture', () => {

@@ -72,9 +72,17 @@ export function withPracticeFixture(catalog: Catalog): Catalog {
     domain: domain.code,
     relevance: 'core' as const,
   };
-  const question = (key: string, prompt: string, points: [string, string]) => ({
+  // A second domain, when the certification has one, gives the Weak Box tests two domains.
+  const secondDomain = cert.domains[1] ?? domain;
+  const secondMapping = { ...mapping, domain: secondDomain.code };
+  const question = (
+    key: string,
+    prompt: string,
+    points: [string, string],
+    dimension: 'what' | 'when' = 'what',
+  ) => ({
     key,
-    dimension: 'what' as const,
+    dimension,
     difficulty: 2,
     prompt,
     referenceAnswer: `${points[0]}. ${points[1]}.`,
@@ -156,6 +164,29 @@ export function withPracticeFixture(catalog: Catalog): Catalog {
                 'Topics push every message to subscribers',
                 'Subscribers never poll topics',
               ]),
+            ],
+          },
+          {
+            slug: 'streams',
+            title: 'Streams',
+            summary: 'Streams keep ordered records for replay.',
+            explanation: 'Synthetic explanation.',
+            mappings: [secondMapping],
+            citations: [
+              {
+                source: 'practice-fixture-source',
+                excerpt: 'Streams keep ordered records.',
+                excerptKind: 'verbatim',
+                supports: 'defines',
+              },
+            ],
+            questions: [
+              question(
+                'stream-use',
+                'When would you choose a stream over a queue?',
+                ['Streams keep records ordered for replay', 'Many consumers read the same records'],
+                'when',
+              ),
             ],
           },
         ],

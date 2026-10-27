@@ -1,0 +1,35 @@
+{
+  "description": "Old activity outside the 30-day window plus recent answers.",
+  "steps": [
+    {
+      "day": -70,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -60,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -45,
+      "concept": "streams",
+      "grade": "miss"
+    },
+    {
+      "day": -31,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -20,
+      "concept": "topics",
+      "grade": "miss"
+    },
+    {
+      "day": 0,
+      "concept": "streams",
+      "grade": "pass"
+    }
+  ]
+}

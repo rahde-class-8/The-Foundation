@@ -37,12 +37,14 @@ async function newAttempt(client: SupabaseClient, answer: string) {
     scope_type: 'service',
     scope_id: service.id,
   });
-  const next = await rpc<{ candidates: { questionVersionId: string }[] }>(
+  const next = await rpc<{ candidates: { questionVersionId: string; conceptTitle: string }[] }>(
     client,
     'next_questions',
     { session_id: session.id },
   );
-  const questionVersionId = next.candidates[0]?.questionVersionId;
+  const questionVersionId = next.candidates.find(
+    (c) => c.conceptTitle === 'Queues',
+  )?.questionVersionId;
   const attempt = await rpc<{ id: string; isCold: boolean }>(client, 'submit_attempt', {
     session_id: session.id,
     question_version_id: questionVersionId,

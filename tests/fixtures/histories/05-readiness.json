@@ -1,0 +1,275 @@
+{
+  "description": "54 cold answers over 110 days, so the readiness estimate is shown.",
+  "steps": [
+    {
+      "day": -110,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -108,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -106,
+      "concept": "streams",
+      "grade": "miss"
+    },
+    {
+      "day": -104,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -102,
+      "concept": "topics",
+      "grade": "partial"
+    },
+    {
+      "day": -100,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -98,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -96,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -94,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -92,
+      "concept": "queues",
+      "grade": "miss"
+    },
+    {
+      "day": -90,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -88,
+      "concept": "streams",
+      "grade": "partial"
+    },
+    {
+      "day": -86,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -84,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -82,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -80,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -78,
+      "concept": "topics",
+      "grade": "miss"
+    },
+    {
+      "day": -76,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -74,
+      "concept": "queues",
+      "grade": "partial"
+    },
+    {
+      "day": -72,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -70,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -68,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -66,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -64,
+      "concept": "streams",
+      "grade": "miss"
+    },
+    {
+      "day": -62,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -60,
+      "concept": "topics",
+      "grade": "partial"
+    },
+    {
+      "day": -58,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -56,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -54,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -52,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -50,
+      "concept": "queues",
+      "grade": "miss"
+    },
+    {
+      "day": -48,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -46,
+      "concept": "streams",
+      "grade": "partial"
+    },
+    {
+      "day": -44,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -42,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -40,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -38,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -36,
+      "concept": "topics",
+      "grade": "miss"
+    },
+    {
+      "day": -34,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -32,
+      "concept": "queues",
+      "grade": "partial"
+    },
+    {
+      "day": -30,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -28,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -26,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -24,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -22,
+      "concept": "streams",
+      "grade": "miss"
+    },
+    {
+      "day": -20,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -18,
+      "concept": "topics",
+      "grade": "partial"
+    },
+    {
+      "day": -16,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -14,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -12,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -10,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -8,
+      "concept": "queues",
+      "grade": "miss"
+    },
+    {
+      "day": -6,
+      "concept": "topics",
+      "grade": "pass"
+    },
+    {
+      "day": -4,
+      "concept": "streams",
+      "grade": "partial"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "description": "Long intervals, a lapse, and recovery (retention buckets 7-20 and 21+).",
+  "steps": [
+    {
+      "day": -29,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -26,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -18,
+      "concept": "streams",
+      "grade": "pass"
+    },
+    {
+      "day": -29,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -5,
+      "concept": "queues",
+      "grade": "miss"
+    },
+    {
+      "day": -4,
+      "concept": "queues",
+      "grade": "pass"
+    },
+    {
+      "day": -3,
+      "concept": "streams",
+      "grade": "partial"
+    }
+  ]
+}
