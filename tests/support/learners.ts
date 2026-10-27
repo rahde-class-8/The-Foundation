@@ -8,11 +8,18 @@ export type Learner = { id: string; email: string; password: string; client: Sup
 
 const DAY = 86_400;
 
-export function adminClient(local: LocalSupabase = readLocalSupabase()) {
+let cached: LocalSupabase | undefined;
+/** `supabase status` is slow, so the connection details are read once per test process. */
+function localDefault(): LocalSupabase {
+  cached ??= readLocalSupabase();
+  return cached;
+}
+
+export function adminClient(local: LocalSupabase = localDefault()) {
   return createClient(local.apiUrl, local.serviceRoleKey, { auth: { persistSession: false } });
 }
 
-export async function createLearner(local: LocalSupabase = readLocalSupabase()): Promise<Learner> {
+export async function createLearner(local: LocalSupabase = localDefault()): Promise<Learner> {
   const email = `learner-${crypto.randomUUID()}@example.test`;
   const password = `Pw-${crypto.randomUUID()}`;
   const created = await adminClient(local).auth.admin.createUser({
@@ -31,7 +38,7 @@ export async function createLearner(local: LocalSupabase = readLocalSupabase()):
 export async function setClock(
   userId: string,
   offsetSeconds: number,
-  local: LocalSupabase = readLocalSupabase(),
+  local: LocalSupabase = localDefault(),
 ) {
   const { error } = await adminClient(local).rpc('set_test_clock', {
     p_user_id: userId,

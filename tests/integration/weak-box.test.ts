@@ -102,9 +102,10 @@ describe.runIf(runIntegration)('Weak Box over the API', () => {
   it('applies a reschedule once even when retried, and shows it in the history (P3-4)', async () => {
     const learner = await createLearner();
     const { conceptId } = await practice(learner, 'streams', FIXTURE_ANSWERS.streams?.pass ?? '');
+    const dueOn = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
     const body = {
       conceptId,
-      dueOn: '2030-01-15',
+      dueOn,
       reason: 'Exam prep order',
       clientKey: crypto.randomUUID(),
     };
@@ -118,7 +119,8 @@ describe.runIf(runIntegration)('Weak Box over the API', () => {
 
     expect(first.replayed).toBe(false);
     expect(first.reviewState).toMatchObject({ manualDueOverride: true, intervalDays: 3 });
-    expect(new Date(first.reviewState.dueAt ?? '').toISOString()).toBe('2030-01-15T00:00:00.000Z');
+    // The learner's timezone is UTC, so the review is due at midnight UTC on that date.
+    expect(new Date(first.reviewState.dueAt ?? '').toISOString()).toBe(`${dueOn}T00:00:00.000Z`);
     expect(retry).toMatchObject({ replayed: true, event: { id: first.event.id } });
     const history = await rpc<{ events: { eventType: string; reason: string | null }[] }>(
       learner.client,
