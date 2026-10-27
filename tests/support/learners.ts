@@ -19,13 +19,17 @@ export function adminClient(local: LocalSupabase = localDefault()) {
   return createClient(local.apiUrl, local.serviceRoleKey, { auth: { persistSession: false } });
 }
 
-export async function createLearner(local: LocalSupabase = localDefault()): Promise<Learner> {
+export async function createLearner(
+  local: LocalSupabase = localDefault(),
+  options: { owner?: boolean } = {},
+): Promise<Learner> {
   const email = `learner-${crypto.randomUUID()}@example.test`;
   const password = `Pw-${crypto.randomUUID()}`;
   const created = await adminClient(local).auth.admin.createUser({
     email,
     password,
     email_confirm: true,
+    ...(options.owner ? { app_metadata: { role: 'owner' } } : {}),
   });
   if (created.error || !created.data.user) throw created.error ?? new Error('createUser failed');
   const client = createClient(local.apiUrl, local.anonKey, { auth: { persistSession: false } });

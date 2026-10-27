@@ -54,6 +54,7 @@ def text_pdf(path, pages, paragraphs_per_page=4):
 
 def main():
     text_pdf(f'{OUT}/valid.pdf', 3)
+    text_pdf(f'{OUT}/pages-120.pdf', 120, paragraphs_per_page=2)
     text_pdf(f'{OUT}/pages-301.pdf', 301, paragraphs_per_page=1)
 
     # Hostile text: injection attempts are just data and must not change behavior (CNT-9a).
