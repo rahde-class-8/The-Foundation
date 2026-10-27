@@ -454,11 +454,23 @@ isOneToOne: false
             "catalog_facets":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"apply_manual_override":
+{ Args: { "p_client_key": string,"p_concept_id": string,"p_due_at": string,"p_expected_version": number,"p_reason": string,"p_user_id": string }; Returns: Json
+                           },
+"concept_history":
+{ Args: { "concept_id": string }; Returns: Json
+                           },
+"dashboard_summary":
+{ Args: { "certification_id"?: string }; Returns: Json
+                           },
+"due_reviews":
+{ Args: { "due_window"?: string,"page_size"?: number }; Returns: Json
+                           },
 "end_session":
 { Args: { "session_id": string }; Returns: Json
                            },
 "finalize_attempt":
-{ Args: { "p_attempt_id": string,"p_config_version": string,"p_expected_version": number,"p_final_evaluation_id": string,"p_transition": Json,"p_user_id": string }; Returns: Json
+{ Args: { "p_attempt_id": string,"p_config_version": string,"p_expected_version": number,"p_final_evaluation_id": string,"p_misconceptions"?: Json,"p_transition": Json,"p_user_id": string }; Returns: Json
                            },
 "get_settings":
 { Args: Record<PropertyKey, never>; Returns: Json
@@ -478,17 +490,26 @@ isOneToOne: false
 "record_ai_evaluation":
 { Args: { "p_attempt_id": string,"p_evaluation": Json,"p_user_id": string }; Returns: Json
                            },
+"recurring_misconceptions":
+{ Args: { "include_single"?: boolean }; Returns: Json
+                           },
 "reveal_reference":
 { Args: { "attempt_id": string }; Returns: Json
                            },
 "search_catalog":
 { Args: { "after"?: string,"category_id"?: string,"domain_id"?: string,"page_size"?: number,"q"?: string }; Returns: Json
                            },
+"server_now":
+{ Args: { "p_user_id": string }; Returns: string
+                           },
 "service_profile":
 { Args: { "provider"?: string,"service_slug": string }; Returns: Json
                            },
 "session_state":
 { Args: { "session_id": string }; Returns: Json
+                           },
+"set_test_clock":
+{ Args: { "p_offset_seconds": number,"p_user_id": string }; Returns: string
                            },
 "start_session":
 { Args: { "scope_id"?: string,"scope_type": string }; Returns: Json
