@@ -27,10 +27,13 @@ npm run db:reset
 # 3. Create the single owner account (signups are disabled by design).
 OWNER_EMAIL=you@example.com OWNER_PASSWORD='at-least-12-chars-Aa1' npm run db:create-owner
 
-# 4. Write .env.local with the public local URL and anon key.
+# 4. Load the curated catalog (re-run after editing content/catalog; it is idempotent).
+npm run catalog:import
+
+# 5. Write .env.local with the public local URL and anon key.
 npm run env:local
 
-# 5. Run the app.
+# 6. Run the app.
 npm run dev            # http://localhost:5173
 ```
 

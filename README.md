@@ -6,7 +6,7 @@ starting with the AWS Solutions Architect Associate (SAA) exam.
 > **"The foundation: every service, as muscle memory."**
 > Accurate knowledge → Active recall → Targeted correction → Spaced repetition → Architectural application.
 
-**Status:** Phase 0 (engineering foundation). Feature screens are placeholders. See the [roadmap](docs/implementation/ROADMAP.md).
+**Status:** Phase 1 (service library) complete. The library has 10 AI-drafted services awaiting review; practice arrives in Phase 2. See the [roadmap](docs/implementation/ROADMAP.md).
 
 ## Stack
 
@@ -21,6 +21,7 @@ See [docs/operations/LOCAL_SETUP.md](docs/operations/LOCAL_SETUP.md). In short:
 nvm use && npm ci
 npm run db:start                                   # requires Docker
 OWNER_EMAIL=you@example.com OWNER_PASSWORD='…' npm run db:create-owner
+npm run catalog:import                             # load the curated catalog
 npm run env:local
 npm run dev                                        # http://localhost:5173
 ```
@@ -59,14 +60,16 @@ space keeps it out of history on most bash setups.
 
 ## Common commands
 
-| Command              | What it does                                          |
-| -------------------- | ----------------------------------------------------- |
-| `npm run check`      | Lint, format check, typecheck, unit + component tests |
-| `npm run test:db`    | pgTAP database tests (local Supabase)                 |
-| `npm run test:int`   | Integration tests against local Supabase              |
-| `npm run test:e2e`   | Playwright end-to-end tests                           |
-| `npm run check:deno` | Type-check Edge Functions with Deno                   |
-| `npm run db:types`   | Regenerate `src/lib/database.types.ts`                |
+| Command                    | What it does                                            |
+| -------------------------- | ------------------------------------------------------- |
+| `npm run check`            | Lint, format check, typecheck, unit + component tests   |
+| `npm run test:db`          | pgTAP database tests (local Supabase)                   |
+| `npm run test:int`         | Integration tests against local Supabase                |
+| `npm run test:e2e`         | Playwright end-to-end tests                             |
+| `npm run check:deno`       | Type-check Edge Functions with Deno                     |
+| `npm run db:types`         | Regenerate `src/lib/database.types.ts`                  |
+| `npm run catalog:validate` | Validate `content/catalog`                              |
+| `npm run catalog:import`   | Load `content/catalog` into local Supabase (idempotent) |
 
 ## Documentation
 

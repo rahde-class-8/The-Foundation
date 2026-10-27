@@ -31,9 +31,20 @@ HTTP status: 400 validation, 403 forbidden, 404 not found, 409 conflict, 429 rat
 
 ## 3. RPCs (Postgres functions)
 
-### `search_catalog(q text, domain_id uuid?, category_id uuid?, after text?, limit int = 24)`
-Returns `{ items: ServiceCard[], next_cursor: string | null }`.
-`ServiceCard = { id, slug, name, category, concept_count, matched_concepts: {id,title}[], progress: {reviewing_or_better, total} }`.
+### `search_catalog(q text?, domain_id uuid?, category_id uuid?, after text?, page_size int = 24)` *(implemented, Phase 1)*
+Returns `{ items: ServiceCard[], nextCursor: string | null }`, ordered by category then name (keyset pagination; `page_size` clamped to 1–100).
+`ServiceCard = { id, slug, name, aliases, summaryMd, status, category: {id, slug, name}, conceptCount, progress: {reviewingOrBetter, studied}, matchedConcepts: {id, slug, title}[] }`.
+Search: every term is prefix-matched against names, aliases, and slugs (`simple` config) and against concept text (`english` config).
+A concept is "matched" when it satisfies the query itself or completes it with its service ("lambda concurrency"). Invalid cursors raise `22023`.
+
+### `service_profile(service_slug text, provider text = 'aws')` *(implemented)*
+Returns the service with `dimensions` (the eight mastery dimensions, null when unauthored), `concepts` (with `domains`, `citations` including a derived `trustTier`, the caller's `progress`, and `questionCount`), and `related` services, or `null` if not found or not visible.
+
+### `catalog_facets()` *(implemented)*
+Returns `{ categories, certifications: [{ …, domains }] }` for the library filters.
+
+### `import_catalog(p_catalog jsonb, p_owner_id uuid)` *(implemented; service role only)*
+Atomic, idempotent sync of `content/catalog` (built by `scripts/catalog-import.ts`). Returns the number of rows changed per table; a re-run of the same catalog returns all zeros.
 
 ### `start_session(scope_type, scope_id?) → study_sessions row`
 Validates the scope and closes any stale `active` session older than 12 h as `abandoned`.
@@ -48,7 +59,7 @@ Idempotent on `client_key`. Computes `is_cold`. Returns `{ id, status: 'submitte
 ### `reveal_reference(attempt_id) → { reference_answer_md, rubric_points: {id, text, weight, critical}[] }`
 SECURITY DEFINER. Requires the attempt to be owned by the caller and submitted.
 
-### `mark_concept_exposed(concept_id) → void`
+### `mark_concept_exposed(concept_id) → void` *(implemented)*
 SECURITY DEFINER. Called when the learner expands a concept's explanation in the library. Sets `first_studied_at` (once) and `last_exposure_at`.
 
 ### `apply_review_transition(...)`

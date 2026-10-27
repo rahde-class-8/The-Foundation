@@ -67,3 +67,17 @@ Each Official citation stores `retrieved_at`. The content screen lists citations
 About 25 services prioritized by exam frequency: IAM, VPC, EC2, Auto Scaling, ELB, S3, EBS, EFS, RDS, Aurora, DynamoDB, ElastiCache, Lambda, API Gateway,
 SQS, SNS, EventBridge, Step Functions, CloudFront, Route 53, CloudWatch, CloudTrail, KMS, Cognito, ECS/Fargate.
 Each has 5–10 concepts and ≥2 questions per concept. The domains are seeded from the **current published SAA exam guide**, verified at seed time.
+
+## 9. Catalog verification workflow (implemented in Phase 1)
+
+`npm run catalog:validate` (run in CI) enforces these rules for curated YAML:
+
+- Every concept has at least one citation and maps to at least one exam domain.
+- A **published** concept needs: a published service; a `review` record (`by`, `at`) when its origin is `ai_draft`;
+  only sources with `retrievedAt` (verified); and at least one **verbatim** excerpt from an official AWS source.
+- A published question needs a published concept; every rubric has at least one critical point.
+
+The Phase 1 seed (10 services) was drafted by AI without access to AWS documentation, so it is `in_review`, cites
+sources by **paraphrase** ("Summary of source (not a quotation)" in the UI), and no source is verified yet. The owner's
+publishing steps are in `content/catalog/README.md`. Until content is published, the library shows it to the owner with
+"In review" badges, and practice (Phase 2) will not use it.

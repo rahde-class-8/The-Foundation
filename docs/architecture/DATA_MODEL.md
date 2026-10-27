@@ -433,3 +433,21 @@ language plpgsql security definer set search_path = '' as $$ ... $$;
 -- Else lock the active state FOR UPDATE; if version <> expected → raise 'conflict' (SQLSTATE P0409);
 -- insert review_event with prev/new values; update state; version += 1; return.
 ```
+
+## 10. Implementation notes (Phase 1)
+
+Implemented in `supabase/migrations/20261028000100`–`…0600`. Differences from the specification above, all additive:
+
+| Change | Reason |
+|---|---|
+| `services`: added `summary_md`, `status`, `origin` | Cards need a summary; services go through the same review lifecycle as concepts |
+| `services`, `service_concepts`, `questions`: added `managed_by` (`catalog` \| `app`) | `import_catalog` syncs and retires only rows owned by `content/catalog`, and refuses to overwrite app-created rows |
+| `service_concepts.sort_order`, `questions.key` | Stable display order and a stable upsert key for catalog questions |
+| `question_versions.content_hash` (`UNIQUE (question_id, content_hash)`) | A content change creates version N+1; reverting reuses the old version |
+| `question_versions` are immutable from creation (not only once referenced) | Simpler and stricter; edits always create versions |
+| `content_sources.catalog_key` | Stable key for curated sources |
+| `source_passages.excerpt_kind` (`verbatim` \| `paraphrase`) | AI-drafted seed content cites sources by paraphrase; the UI must not present those as quotations |
+| `review_state` created in Phase 1 | Holds `first_studied_at` / `last_exposure_at` ("studied", LIB-7). Scheduling columns stay unused until Phase 2. The `initialized` review event arrives with `review_events` in Phase 2. |
+| Helpers live in a non-exposed `private` schema | `is_owner()`, `trust_tier()`, search query builder, triggers |
+| RLS is enabled, not forced | Table owners (migrations, SECURITY DEFINER functions) bypass RLS by design; clients never connect as owners |
+| Baseline migration revokes default grants | Every table and function is granted explicitly (pgTAP guard `000_baseline_privileges`) |
