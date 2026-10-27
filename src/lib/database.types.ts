@@ -213,6 +213,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"import_jobs": {
+                  Row: {
+                    "created_at": string,"cursor": Json | null,"error_code": string | null,"error_detail": string | null,"finished_at": string | null,"heartbeat_at": string | null,"id": string,"job_type": string,"params": Json | null,"passage_count": number,"progress_pct": number,"result": Json | null,"run_count": number,"source_id": string | null,"started_at": string | null,"status": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"cursor"?: Json | null,"error_code"?: string | null,"error_detail"?: string | null,"finished_at"?: string | null,"heartbeat_at"?: string | null,"id"?: string,"job_type": string,"params"?: Json | null,"passage_count"?: number,"progress_pct"?: number,"result"?: Json | null,"run_count"?: number,"source_id"?: string | null,"started_at"?: string | null,"status"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"cursor"?: Json | null,"error_code"?: string | null,"error_detail"?: string | null,"finished_at"?: string | null,"heartbeat_at"?: string | null,"id"?: string,"job_type"?: string,"params"?: Json | null,"passage_count"?: number,"progress_pct"?: number,"result"?: Json | null,"run_count"?: number,"source_id"?: string | null,"started_at"?: string | null,"status"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "import_jobs_source_id_fkey"
+      columns: ["source_id"]
+isOneToOne: false
+      referencedRelation: "content_sources"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"misconception_occurrences": {
                   Row: {
                     "attempt_id": string,"created_at": string,"evaluation_id": string,"excerpt": string | null,"misconception_id": string,"user_id": string
@@ -609,7 +629,7 @@ isOneToOne: false
 { Args: { "attempt_id": string,"grade": string,"reason"?: string,"ticks"?: Json }; Returns: Json
                            },
 "update_draft":
-{ Args: { "concept_id": string,"domain_ids": string[],"explanation_md": string,"limitations_md": string,"questions": Json,"summary_md": string,"title": string }; Returns: Json
+{ Args: { "concept_id": string,"domain_ids": (string)[],"explanation_md": string,"limitations_md": string,"questions": Json,"summary_md": string,"title": string }; Returns: Json
                            },
 "update_settings":
 { Args: { "ai_grading_enabled": boolean,"daily_new_limit": number,"daily_review_limit": number,"default_eval_mode": string,"timezone": string }; Returns: Json
