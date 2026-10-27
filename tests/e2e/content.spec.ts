@@ -14,8 +14,9 @@ const fixture = (name: string) => readFileSync(`tests/fixtures/pdfs/${name}`);
 test('upload a PDF, draft from its passages, review, and publish (CNT-2…7, P4-4)', async ({
   page,
 }) => {
-  test.setTimeout(90_000);
-  const name = `queues-${crypto.randomUUID().slice(0, 8)}.pdf`;
+  test.setTimeout(180_000);
+  const runId = crypto.randomUUID().slice(0, 8);
+  const name = `queues-${runId}.pdf`;
   const buffer = Buffer.concat([fixture('valid.pdf'), Buffer.from(`\n% ${name}\n`)]);
 
   await signIn(page, '/content');
@@ -35,13 +36,18 @@ test('upload a PDF, draft from its passages, review, and publish (CNT-2…7, P4-
     .selectOption({ label: 'Practice Fixture Service' });
   await page.getByLabel('Up to', { exact: true }).selectOption('1');
   await page.getByRole('button', { name: 'Generate drafts' }).click();
-  await page.getByRole('status').getByRole('link').first().click();
+  // The first call to a function can be slow while the Edge runtime starts it.
+  const created = page.getByRole('status').filter({ hasText: /draft(s)? created/ });
+  await expect(created).toBeVisible({ timeout: 60_000 });
+  await created.getByRole('link').first().click();
 
   await expect(page.getByRole('heading', { name: 'Review draft' })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'Cited passages' })).toContainText(
     'Not verified against AWS docs',
   );
-  const title = await page.getByLabel('Title').inputValue();
+  // A unique title keeps this run's concept apart from earlier runs on the shared owner account.
+  const title = `${await page.getByLabel('Title').inputValue()} ${runId}`;
+  await page.getByLabel('Title').fill(title);
   const approve = page.getByRole('button', { name: 'Approve and publish' });
   await expect(approve).toBeDisabled();
   const checklist = page.getByRole('group', { name: 'Review checklist' });
