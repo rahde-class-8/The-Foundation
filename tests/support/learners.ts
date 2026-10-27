@@ -14,7 +14,7 @@ export function adminClient(local: LocalSupabase = readLocalSupabase()) {
 
 export async function createLearner(local: LocalSupabase = readLocalSupabase()): Promise<Learner> {
   const email = `learner-${crypto.randomUUID()}@example.test`;
-  const password = `pw-${crypto.randomUUID()}`;
+  const password = `Pw-${crypto.randomUUID()}`;
   const created = await adminClient(local).auth.admin.createUser({
     email,
     password,
