@@ -1,6 +1,6 @@
 # Architecture Review Package
 
-**For:** Project owner · **Status:** Awaiting approval · **Date:** 2026-10-27
+**For:** Project owner · **Status:** Approved 2026-10-27 · **Date:** 2026-10-27
 
 This package covers brief §15 Steps 1 and 6. Steps 2–5 live in the linked documents.
 **Implementation will not begin until the owner states: "Architecture approved. Begin Phase 0."**

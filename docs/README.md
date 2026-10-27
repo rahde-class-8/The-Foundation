@@ -1,12 +1,12 @@
 # AWS Architecture Muscle Memory — Planning Documentation
 
-**Status:** DRAFT — awaiting project-owner architectural approval
+**Status:** Architecture approved by the project owner on 2026-10-27. Phase 0 in progress.
 **Doc set version:** 0.1 (planning)
 **Last updated:** 2026-10-27
 
-> No application code, dependencies, repository, migrations, or infrastructure exist yet.
-> Everything in this directory describes *intended* design. Operational documents describe the
-> planned setup and do not claim that anything is running.
+> Approval covered the checklist below. Open questions Q2–Q9 were not answered individually, so the
+> **defaults listed for each are in effect** (including Option A for Q8). Any of them can still be changed
+> before the phase that depends on it begins.
 
 ## Index
 
@@ -35,16 +35,16 @@ Start with the **[Architecture Review package](ARCHITECTURE_REVIEW.md)**: it cov
 
 The project owner should approve or amend each item before Phase 0 begins.
 
-- [ ] **A1** Product scope and non-goals (PRD §3–4)
-- [ ] **A2** Concept-level mastery and review tracking (ADR-0005)
-- [ ] **A3** Data model, including the six entities added beyond the brief (DATA_MODEL §2)
-- [ ] **A4** Server-authoritative, idempotent scheduling (ADR-0003)
-- [ ] **A5** Grade finalization model: overrides happen before finalization (ADR-0008)
-- [ ] **A6** Scheduler default parameters (SPACED_REPETITION §4)
-- [ ] **A7** Cold-recall definition (MASTERY_MODEL §3)
-- [ ] **A8** AI provider abstraction and default provider (ADR-0004)
-- [ ] **A9** Curated catalog maintained as content-as-code (ADR-0007)
-- [ ] **A10** Phase ordering, including the Option A/B decision (ROADMAP §2)
+- [x] **A1** Product scope and non-goals (PRD §3–4)
+- [x] **A2** Concept-level mastery and review tracking (ADR-0005)
+- [x] **A3** Data model, including the six entities added beyond the brief (DATA_MODEL §2)
+- [x] **A4** Server-authoritative, idempotent scheduling (ADR-0003)
+- [x] **A5** Grade finalization model: overrides happen before finalization (ADR-0008)
+- [x] **A6** Scheduler default parameters (SPACED_REPETITION §4)
+- [x] **A7** Cold-recall definition (MASTERY_MODEL §3)
+- [x] **A8** AI provider abstraction and default provider (ADR-0004)
+- [x] **A9** Curated catalog maintained as content-as-code (ADR-0007)
+- [x] **A10** Phase ordering, including the Option A/B decision (ROADMAP §2)
 
 ## Open questions for the project owner
 

@@ -1,6 +1,6 @@
 # ADR-0006: Immutable question versions
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-27)
 
 **Context.** Rubric and content versioning are required, and historical grades must stay interpretable.
 

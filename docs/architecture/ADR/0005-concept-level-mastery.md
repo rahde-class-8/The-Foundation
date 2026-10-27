@@ -1,6 +1,6 @@
 # ADR-0005: Mastery and review state tracked per concept
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-27)
 
 **Context.** "Do not treat mastery of one concept as mastery of the entire service." Each concept has several questions (one per mastery dimension or more).
 

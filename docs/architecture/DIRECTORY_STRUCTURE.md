@@ -1,6 +1,6 @@
 # Directory Structure
 
-**Status:** The skeleton exists as empty directories (with `.gitkeep` placeholders). No code, configuration, or dependencies have been added.
+**Status:** Phase 0 populated the shell (app, auth, routing, tooling). Empty folders keep `.gitkeep` placeholders until their phase.
 It implements SYSTEM_ARCHITECTURE §8.
 
 ```text
@@ -9,7 +9,8 @@ aws-architecture-muscle-memory/
 ├── content/catalog/saa/          # Curated SAA catalog YAML: services, concepts, questions, rubrics, citations (ADR-0007)
 ├── docs/                         # Planning and project documentation
 ├── public/                       # Static assets served as-is by Vite
-├── scripts/                      # Node scripts: catalog validate/import, type generation, AI calibration
+├── scripts/                      # Node scripts (run as TypeScript): owner bootstrap, env writer, bundle secret scan; later catalog import, calibration
+│   └── lib/                      #   Testable helpers used by the scripts
 ├── src/                          # React SPA
 │   ├── app/
 │   │   ├── layout/               # App shell, navigation
@@ -27,7 +28,8 @@ aws-architecture-muscle-memory/
 │   │   ├── content/              #   /content
 │   │   └── settings/             #   /settings
 │   │       └── {components,api,hooks,routes}/   # same four subfolders in every feature
-│   ├── lib/                      # Supabase client, env validation, generated DB types
+│   ├── lib/                      # Supabase client, env validation, query client, generated DB types
+│   │   └── auth/                 #   Session context + useAuth (cross-cutting, so not a feature)
 │   ├── styles/                   # Tailwind entry and global CSS
 │   └── test/                     # RTL/Vitest helpers and test utilities
 ├── supabase/
@@ -50,6 +52,7 @@ aws-architecture-muscle-memory/
 │       │   │   └── calibration/  #   Labeled grading calibration set
 │       │   ├── db/               #   Typed queries using the caller's JWT
 │       │   └── http/             #   Request validation, error envelope, CORS
+│       ├── health/               # Edge Function: liveness probe; ADR-0002 shared-core proof
 │       ├── evaluate-attempt/     # Edge Function: AI grading
 │       ├── finalize-attempt/     # Edge Function: finalize + schedule
 │       ├── override-schedule/    # Edge Function: manual reschedule

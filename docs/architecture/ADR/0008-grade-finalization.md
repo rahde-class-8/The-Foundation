@@ -1,6 +1,6 @@
 # ADR-0008: Grade finalization — overrides before finalize
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-27)
 
 **Context.** The learner may override AI grades, original and final grades must be stored, and scheduling must be idempotent.
 If overrides were allowed after scheduling, every override would need to unwind and replay scheduling.

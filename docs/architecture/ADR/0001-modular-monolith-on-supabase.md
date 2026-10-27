@@ -1,6 +1,6 @@
 # ADR-0001: Modular monolith on Supabase
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-27)
 
 **Context.** The brief mandates React/Vite + Supabase and a modular monolith. There is one user. The protected operations are AI calls, scheduling, and file processing.
 

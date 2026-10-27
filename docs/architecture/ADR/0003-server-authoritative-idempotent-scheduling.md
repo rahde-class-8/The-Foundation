@@ -1,6 +1,6 @@
 # ADR-0003: Server-authoritative, idempotent scheduling
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-27)
 
 **Context.** Scheduling must be isolated, configurable, idempotent, and outside UI components. Retries, double-clicks, and two open tabs are realistic.
 

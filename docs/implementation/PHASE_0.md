@@ -1,6 +1,7 @@
 # Phase 0 — Engineering Foundation
 
-**Starts only after:** "Architecture approved. Begin Phase 0."
+**Authorized:** 2026-10-27 ("Architecture approved. Begin Phase 0.")  
+**Status:** Implemented. Awaiting CI confirmation of the Docker-dependent checks, then owner sign-off.
 
 ## Goals
 A reproducible, CI-verified skeleton where every later phase can add a vertical slice without touching tooling.
@@ -29,3 +30,20 @@ A reproducible, CI-verified skeleton where every later phase can add a vertical 
 
 ## Risks
 Shared-code spike failure (R4) → the fallback is documented in ADR-0002.
+
+## Implementation results
+
+| ID | Result | Evidence |
+|---|---|---|
+| P0-1 | Pending CI | `npm ci`, check, build, and E2E smoke verified in the dev container. Supabase steps are exercised by the CI `supabase` job (the dev container cannot pull registry images). |
+| P0-2 | ✅ locally / pending CI | `npm run check` passes: lint, format, typecheck, 29 unit and component tests |
+| P0-3 | ✅ (component + E2E smoke) / pending CI (signed-in E2E) | `routes.test.tsx`, `smoke.spec.ts`. `auth.spec.ts` runs in CI with the owner account. |
+| P0-4 | Pending CI | `enable_signup = false` in `supabase/config.toml`; asserted by `tests/integration/foundation.test.ts` |
+| P0-5 | ✅ | ADR-0002 Results section |
+| P0-6 | ✅ | `secret-scan.test.ts`, plus a manual run: injecting a fake service-role JWT into `dist/` made `npm run check:secrets` exit 1 |
+
+### Notable decisions
+- Toolchain versions: ADR-0010 (TypeScript 6.0, ESLint 9).
+- Baseline migration revokes Supabase's default grants to `anon`/`authenticated` on new public tables, sequences, and functions. Every object must be granted explicitly (pgTAP guard `000_baseline_privileges.test.sql`).
+- The service-role key is used only by local developer scripts (`db:create-owner`), which refuse non-local URLs.
+- Feature routes are lazy-loaded. The entry chunk is ~200 kB gzipped (required libraries). Budget set in `vite.config.ts`.

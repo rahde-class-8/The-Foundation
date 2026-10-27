@@ -1,6 +1,6 @@
 # ADR-0007: Curated catalog as content-as-code
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-27)
 
 **Context.** The curated SAA catalog is the foundation of learning quality. It needs review, diffs, history, and reproducible environments.
 

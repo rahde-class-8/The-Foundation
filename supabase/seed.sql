@@ -1,0 +1,2 @@
+-- Local development seed. Intentionally minimal: the owner account is created with
+-- `npm run db:create-owner` and the curated catalog loads with `npm run catalog:import` (Phase 1).

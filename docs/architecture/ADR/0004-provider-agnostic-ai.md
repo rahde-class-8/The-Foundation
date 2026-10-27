@@ -1,6 +1,6 @@
 # ADR-0004: Provider-agnostic AI with schema-validated output
 
-**Status:** Proposed. The default provider depends on owner input (Q3).
+**Status:** Accepted (2026-10-27). Default provider: Anthropic (Q3 default in effect).
 
 **Context.** The brief forbids coupling business logic to one model provider and requires structured, versioned, server-side evaluation with fallback.
 

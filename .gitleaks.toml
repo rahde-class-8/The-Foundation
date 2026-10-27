@@ -1,0 +1,9 @@
+title = "aws-architecture-muscle-memory"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Intentional fake credentials: bundle-scanner fixtures and the CI-only ephemeral owner account"
+paths = ['''scripts/lib/secret-scan\.test\.ts''']
+regexes = ['''Ci-Owner-Passw0rd''']
