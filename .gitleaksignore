@@ -1,0 +1,2 @@
+# Test-only password literal for the sign-up rejection test; replaced with a runtime value in a later commit.
+699f2af7c2a2187aacd1b87a1cc64ff130f875f7:tests/integration/foundation.test.ts:generic-api-key:12

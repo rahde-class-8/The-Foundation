@@ -9,7 +9,7 @@ describe('local Supabase foundation', () => {
   it('rejects self-registration (AUTH-2a / P0-4)', async () => {
     const { data, error } = await anon().auth.signUp({
       email: `intruder-${Date.now()}@example.com`,
-      password: 'Sufficiently-long-1',
+      password: `Aa1-${crypto.randomUUID()}`,
     });
 
     expect(error).not.toBeNull();

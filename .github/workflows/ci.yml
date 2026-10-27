@@ -66,7 +66,15 @@ jobs:
       - name: Generated database types are up to date
         run: |
           npm run db:types
-          .github/scripts/run-annotated.sh git diff --exit-code src/lib/database.types.ts
+          if ! git diff --quiet src/lib/database.types.ts; then
+            # Publish the generated file so it can be reviewed and committed without log access.
+            split -l 40 -d src/lib/database.types.ts /tmp/types-part-
+            for part in /tmp/types-part-*; do
+              echo "::notice title=database.types.ts ${part##*-}::$(sed -e 's/%/%25/g' "$part" | sed -e ':a;N;$!ba;s/\n/%0A/g')"
+            done
+            echo "::error::src/lib/database.types.ts is out of date. Run npm run db:types and commit the result."
+            exit 1
+          fi
       - run: .github/scripts/run-annotated.sh npm run db:create-owner
       - run: npm run env:local
       - name: Integration tests
