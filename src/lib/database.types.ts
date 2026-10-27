@@ -509,11 +509,29 @@ isOneToOne: false
 "catalog_facets":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"claim_import_job":
+{ Args: { "p_job_id": string,"p_restart"?: boolean,"p_user_id": string }; Returns: Json
+                           },
 "concept_history":
 { Args: { "concept_id": string }; Returns: Json
                            },
+"content_overview":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"create_drafts":
+{ Args: { "p_drafts": Json,"p_job_id": string,"p_service_id": string,"p_user_id": string }; Returns: Json
+                           },
+"create_note_source":
+{ Args: { "body_md": string,"title": string }; Returns: Json
+                           },
+"create_upload_source":
+{ Args: { "byte_size": number,"sha256": string,"title": string }; Returns: Json
+                           },
 "dashboard_summary":
 { Args: { "certification_id"?: string }; Returns: Json
+                           },
+"draft_detail":
+{ Args: { "concept_id": string }; Returns: Json
                            },
 "due_reviews":
 { Args: { "due_window"?: string,"page_size"?: number }; Returns: Json
@@ -523,6 +541,9 @@ isOneToOne: false
                            },
 "finalize_attempt":
 { Args: { "p_attempt_id": string,"p_config_version": string,"p_expected_version": number,"p_final_evaluation_id": string,"p_misconceptions"?: Json,"p_transition": Json,"p_user_id": string }; Returns: Json
+                           },
+"finish_import_job":
+{ Args: { "p_error_code"?: string,"p_error_detail"?: string,"p_job_id": string,"p_result"?: Json,"p_sha256"?: string,"p_user_id": string }; Returns: Json
                            },
 "get_settings":
 { Args: Record<PropertyKey, never>; Returns: Json
@@ -539,17 +560,29 @@ isOneToOne: false
 "practice_scopes":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"publish_concept":
+{ Args: { "concept_id": string }; Returns: Json
+                           },
 "record_ai_evaluation":
 { Args: { "p_attempt_id": string,"p_evaluation": Json,"p_user_id": string }; Returns: Json
                            },
+"record_import_progress":
+{ Args: { "p_cursor": Json,"p_job_id": string,"p_page_count"?: number,"p_passages": Json,"p_progress": number,"p_user_id": string }; Returns: Json
+                           },
 "recurring_misconceptions":
 { Args: { "include_single"?: boolean }; Returns: Json
+                           },
+"reject_draft":
+{ Args: { "concept_id": string }; Returns: Json
                            },
 "reveal_reference":
 { Args: { "attempt_id": string }; Returns: Json
                            },
 "search_catalog":
 { Args: { "after"?: string,"category_id"?: string,"domain_id"?: string,"page_size"?: number,"q"?: string }; Returns: Json
+                           },
+"search_passages":
+{ Args: { "page_size"?: number,"q"?: string,"source_id"?: string }; Returns: Json
                            },
 "server_now":
 { Args: { "p_user_id": string }; Returns: string
@@ -563,6 +596,9 @@ isOneToOne: false
 "set_test_clock":
 { Args: { "p_offset_seconds": number,"p_user_id": string }; Returns: string
                            },
+"start_draft_job":
+{ Args: { "p_params": Json,"p_user_id": string }; Returns: Json
+                           },
 "start_session":
 { Args: { "scope_id"?: string,"scope_type": string }; Returns: Json
                            },
@@ -571,6 +607,9 @@ isOneToOne: false
                            },
 "submit_self_evaluation":
 { Args: { "attempt_id": string,"grade": string,"reason"?: string,"ticks"?: Json }; Returns: Json
+                           },
+"update_draft":
+{ Args: { "concept_id": string,"domain_ids": string[],"explanation_md": string,"limitations_md": string,"questions": Json,"summary_md": string,"title": string }; Returns: Json
                            },
 "update_settings":
 { Args: { "ai_grading_enabled": boolean,"daily_new_limit": number,"daily_review_limit": number,"default_eval_mode": string,"timezone": string }; Returns: Json

@@ -1,7 +1,7 @@
 import { CheckCircle2, ChevronDown } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Link } from 'react-router';
-import { ReviewStatusBadge } from '@/components/common/ContentBadges';
+import { ReviewStatusBadge, TrustBadge } from '@/components/common/ContentBadges';
 import { Markdown } from '@/components/common/Markdown';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,11 @@ export function ConceptItem({ concept, onFirstExpand }: Props) {
   const panelId = useId();
   const mastery = concept.progress?.masteryStatus ?? 'new';
   const studied = Boolean(concept.progress?.firstStudiedAt);
+  // Concepts drawn only from the learner's notes say so until an official source is cited (P4-4).
+  const notesOnly =
+    concept.citations.length > 0 &&
+    concept.citations.some((c) => c.source.trustTier === 'personal') &&
+    !concept.citations.some((c) => c.source.trustTier === 'official');
 
   function toggle() {
     const next = !open;
@@ -46,6 +51,14 @@ export function ConceptItem({ concept, onFirstExpand }: Props) {
             <span className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{concept.title}</span>
               <ReviewStatusBadge status={concept.status} />
+              {notesOnly ? (
+                <>
+                  <TrustBadge tier="personal" />
+                  <span className="text-xs text-muted-foreground">
+                    Not verified against AWS docs
+                  </span>
+                </>
+              ) : null}
               <Badge variant={mastery === 'new' ? 'outline' : 'secondary'}>
                 {MASTERY_LABELS[mastery]}
               </Badge>
