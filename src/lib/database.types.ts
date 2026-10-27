@@ -315,7 +315,17 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "catalog_facets":
+            "end_session": { Args: { session_id: string }; Returns: Json },
+"get_settings": { Args: never; Returns: Json },
+"update_settings": { Args: { ai_grading_enabled: boolean; daily_new_limit: number; daily_review_limit: number; default_eval_mode: string; timezone: string }; Returns: Json },
+"next_questions": { Args: { session_id: string }; Returns: Json },
+"practice_scopes": { Args: never; Returns: Json },
+"reveal_reference": { Args: { attempt_id: string }; Returns: Json },
+"session_state": { Args: { session_id: string }; Returns: Json },
+"start_session": { Args: { scope_id?: string; scope_type: string }; Returns: Json },
+"submit_attempt": { Args: { answer_duration_ms?: number; answer_md: string; attempt_kind?: string; client_key: string; parent_attempt_id?: string; question_version_id: string; session_id: string }; Returns: Json },
+"submit_self_evaluation": { Args: { attempt_id: string; grade: string; reason?: string; ticks?: Json }; Returns: Json },
+"catalog_facets":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
 "import_catalog":

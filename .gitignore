@@ -22,3 +22,6 @@ blob-report/
 .vscode/*
 !.vscode/extensions.json
 *.log
+
+# Edge Function secrets for local use (see supabase/functions/.env.example)
+supabase/functions/.env

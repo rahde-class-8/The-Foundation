@@ -127,7 +127,16 @@ describe('ServiceProfilePage', () => {
     expect(within(sources).getByText('Not verified against AWS docs')).toBeInTheDocument();
   });
 
-  it('flags content in review and keeps practice disabled until Phase 2', async () => {
+  it('starts practice from a published service (LIB-9)', async () => {
+    renderProfile();
+
+    expect(await screen.findByRole('link', { name: 'Practice this service' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/practice\?start=service&id=/),
+    );
+  });
+
+  it('flags content in review and disables practice for it', async () => {
     getServiceProfile.mockResolvedValue(serviceProfile({ status: 'in_review' }));
     renderProfile();
 

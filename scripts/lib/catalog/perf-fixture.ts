@@ -57,3 +57,109 @@ export function withPerfFixture(catalog: Catalog, services = 25, conceptsPerServ
     ],
   };
 }
+
+/**
+ * A small, published, fully verified service for practice tests (CI only). Its rubric points use
+ * plain keywords so the mock grader can match them.
+ */
+export function withPracticeFixture(catalog: Catalog): Catalog {
+  const cert = catalog.certifications[0];
+  const domain = cert?.domains[0];
+  if (!cert || !domain)
+    throw new Error('The practice fixture needs at least one certification with a domain.');
+  const mapping = {
+    certification: `${cert.vendor}/${cert.code}/${cert.examVersion}`,
+    domain: domain.code,
+    relevance: 'core' as const,
+  };
+  const question = (key: string, prompt: string, points: [string, string]) => ({
+    key,
+    dimension: 'what' as const,
+    difficulty: 2,
+    prompt,
+    referenceAnswer: `${points[0]}. ${points[1]}.`,
+    rubric: {
+      schemaVersion: 1 as const,
+      points: [
+        { id: 'p1', text: points[0], weight: 3, critical: true },
+        { id: 'p2', text: points[1], weight: 2, critical: true },
+      ],
+      knownMisconceptions: [],
+      thresholds: { pass: 0.8, partial: 0.4 },
+    },
+  });
+
+  return {
+    ...catalog,
+    sources: [
+      ...catalog.sources,
+      {
+        key: 'practice-fixture-source',
+        type: 'aws_documentation',
+        title: 'Practice fixture source',
+        url: 'https://docs.aws.amazon.com/',
+        retrievedAt: '2026-10-01',
+      },
+    ],
+    services: [
+      ...catalog.services,
+      {
+        path: 'practice-fixture',
+        provider: 'aws',
+        slug: 'practice-fixture',
+        name: 'Practice Fixture Service',
+        aliases: [],
+        category: catalog.categories[0]?.slug ?? 'compute',
+        status: 'published',
+        origin: 'manual',
+        summary: 'Synthetic published service used by practice tests.',
+        dimensions: {},
+        related: [],
+        concepts: [
+          {
+            slug: 'queues',
+            title: 'Queues',
+            summary: 'Queues decouple producers from consumers.',
+            explanation: 'Synthetic explanation.',
+            mappings: [mapping],
+            citations: [
+              {
+                source: 'practice-fixture-source',
+                excerpt: 'Queues decouple producers from consumers.',
+                excerptKind: 'verbatim',
+                supports: 'defines',
+              },
+            ],
+            questions: [
+              question('queue-purpose', 'What problem does a queue solve?', [
+                'Queues decouple producers from consumers',
+                'Buffering absorbs traffic spikes',
+              ]),
+            ],
+          },
+          {
+            slug: 'topics',
+            title: 'Topics',
+            summary: 'Topics push messages to every subscriber.',
+            explanation: 'Synthetic explanation.',
+            mappings: [mapping],
+            citations: [
+              {
+                source: 'practice-fixture-source',
+                excerpt: 'Topics push messages to subscribers.',
+                excerptKind: 'verbatim',
+                supports: 'defines',
+              },
+            ],
+            questions: [
+              question('topic-delivery', 'How does a topic deliver messages?', [
+                'Topics push every message to subscribers',
+                'Subscribers never poll topics',
+              ]),
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}

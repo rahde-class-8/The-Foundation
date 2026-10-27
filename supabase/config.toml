@@ -426,3 +426,4 @@ enabled = true
 # Public liveness probe; returns no user data.
 [functions.health]
 verify_jwt = false
+

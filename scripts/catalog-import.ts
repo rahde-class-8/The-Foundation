@@ -1,11 +1,11 @@
 // Loads content/catalog into the LOCAL Supabase stack (idempotent).
-// Usage: npm run catalog:import [-- --expect-no-changes] [-- --fixture perf] [-- --emit-json <file>]
+// Usage: npm run catalog:import [-- --expect-no-changes] [-- --fixture practice,perf] [-- --emit-json <file>]
 import { writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { createClient } from '@supabase/supabase-js';
 import { readCatalogFiles } from './lib/catalog/files.ts';
 import { loadCatalog, toImportPayload } from './lib/catalog/load.ts';
-import { withPerfFixture } from './lib/catalog/perf-fixture.ts';
+import { withPerfFixture, withPracticeFixture } from './lib/catalog/perf-fixture.ts';
 import { readLocalSupabase } from './lib/local-supabase.ts';
 
 const { values: args } = parseArgs({
@@ -22,11 +22,20 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-if (args.fixture && args.fixture !== 'perf') {
-  console.error(`Unknown fixture "${args.fixture}".`);
+// Test fixtures (CI only). A plain import retires fixture rows, since they are not in the YAML.
+const FIXTURES = { practice: withPracticeFixture, perf: withPerfFixture } as const;
+const requested = (args.fixture ?? '').split(',').filter(Boolean);
+const unknown = requested.filter((name) => !(name in FIXTURES));
+if (unknown.length > 0) {
+  console.error(
+    `Unknown fixture(s): ${unknown.join(', ')}. Available: ${Object.keys(FIXTURES).join(', ')}.`,
+  );
   process.exit(2);
 }
-const catalog = args.fixture === 'perf' ? withPerfFixture(loaded) : loaded;
+const catalog = requested.reduce(
+  (current, name) => FIXTURES[name as keyof typeof FIXTURES](current),
+  loaded,
+);
 const payload = toImportPayload(catalog);
 
 if (args['emit-json']) {

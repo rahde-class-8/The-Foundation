@@ -45,6 +45,11 @@ export default tseslint.config(
     },
   },
   {
+    // Tests may assert presence with `!` after setting up the data themselves.
+    files: ['**/*.test.{ts,tsx}'],
+    rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
+  },
+  {
     // shadcn/ui primitives export variant helpers next to components by design.
     files: ['src/components/ui/**/*.tsx'],
     rules: { 'react-refresh/only-export-components': 'off' },

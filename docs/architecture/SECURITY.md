@@ -53,7 +53,7 @@
 | Credential | Where it lives | Used by |
 |---|---|---|
 | Supabase anon key | SPA bundle (public by design) | SPA |
-| Supabase service-role key | Not used by application code at runtime. Held only by the owner for CLI or admin tasks. | None. Every Edge Function uses the caller's JWT, so RLS applies, including ingest (Storage read + passage insert are owner-permitted by policy). Introducing a service-role path requires an ADR. |
+| Supabase service-role key | Edge runtime only (provided by Supabase), and the owner's local CLI scripts | Only `evaluate-attempt` and `finalize-attempt`, after verifying the caller's JWT, to call `record_ai_evaluation` / `finalize_attempt` (ADR-0011). Any other service-role path requires an ADR. |
 | AI API key(s) | Edge Function secrets | `_shared/ai` adapters |
 | DB password | Supabase project; local `.env` (gitignored) | Migrations / CLI |
 

@@ -1,5 +1,6 @@
 import { CheckCircle2, ChevronDown } from 'lucide-react';
 import { useId, useState } from 'react';
+import { Link } from 'react-router';
 import { ReviewStatusBadge } from '@/components/common/ContentBadges';
 import { Markdown } from '@/components/common/Markdown';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +74,14 @@ export function ConceptItem({ concept, onFirstExpand }: Props) {
         </button>
       </h3>
       <div id={panelId} hidden={!open} className="space-y-4 border-t p-4">
+        {concept.status === 'published' && concept.questionCount > 0 ? (
+          <Link
+            to={`/practice?start=concept&id=${concept.id}`}
+            className="inline-block text-sm font-medium underline underline-offset-4"
+          >
+            Practice this concept
+          </Link>
+        ) : null}
         {concept.explanationMd ? <Markdown>{concept.explanationMd}</Markdown> : null}
         {concept.examplesMd ? (
           <section className="space-y-1.5">

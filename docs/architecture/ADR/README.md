@@ -15,3 +15,4 @@ The project owner approved the architecture on 2026-10-27 ("Architecture approve
 | [0008](0008-grade-finalization.md) | Grade finalization: overrides before finalize | Accepted |
 | [0009](0009-single-user-auth-with-rls.md) | Single-user auth with full RLS | Accepted |
 | [0010](0010-toolchain-baseline.md) | Toolchain version baseline | Accepted |
+| [0011](0011-server-only-learning-writes.md) | Server-only writes for AI evaluations and review transitions | Accepted |

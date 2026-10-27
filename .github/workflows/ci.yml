@@ -84,11 +84,13 @@ jobs:
         run: .github/scripts/run-annotated.sh npm run catalog:import
       - name: Re-import is idempotent (P1-1)
         run: .github/scripts/run-annotated.sh npm run catalog:import -- --expect-no-changes
+      - name: Load the practice fixture
+        run: .github/scripts/run-annotated.sh npm run catalog:import -- --fixture practice
       - run: npm run env:local
       - name: Integration tests
         run: .github/scripts/run-annotated.sh npm run test:int
       - name: Load the catalog performance fixture (P1-4)
-        run: .github/scripts/run-annotated.sh npm run catalog:import -- --fixture perf
+        run: .github/scripts/run-annotated.sh npm run catalog:import -- --fixture practice,perf
       - run: npx playwright install --with-deps chromium
       - name: End-to-end tests
         run: .github/scripts/run-annotated.sh npm run test:e2e

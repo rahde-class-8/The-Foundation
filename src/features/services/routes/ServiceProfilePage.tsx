@@ -67,9 +67,15 @@ function Profile({
           </p>
         ) : null}
         <div className="flex flex-wrap items-center gap-3">
-          <Button disabled title="Practice sessions arrive in Phase 2">
-            Practice this service
-          </Button>
+          {service.status === 'published' && service.concepts.some((c) => c.questionCount > 0) ? (
+            <Button asChild>
+              <Link to={`/practice?start=service&id=${service.id}`}>Practice this service</Link>
+            </Button>
+          ) : (
+            <Button disabled title="Practice uses published content only">
+              Practice this service
+            </Button>
+          )}
           {service.docsUrl ? (
             <a
               href={service.docsUrl}
