@@ -1,7 +1,7 @@
 # Phase 0 — Engineering Foundation
 
 **Authorized:** 2026-10-27 ("Architecture approved. Begin Phase 0.")  
-**Status:** Implemented. Awaiting CI confirmation of the Docker-dependent checks, then owner sign-off.
+**Status:** Complete. All acceptance criteria are verified (CI run [40479561117](https://github.com/rahde-class-8/The-Foundation/actions/runs/40479561117)). Awaiting owner sign-off.
 
 ## Goals
 A reproducible, CI-verified skeleton where every later phase can add a vertical slice without touching tooling.
@@ -35,12 +35,20 @@ Shared-code spike failure (R4) → the fallback is documented in ADR-0002.
 
 | ID | Result | Evidence |
 |---|---|---|
-| P0-1 | Pending CI | `npm ci`, check, build, and E2E smoke verified in the dev container. Supabase steps are exercised by the CI `supabase` job (the dev container cannot pull registry images). |
-| P0-2 | ✅ locally / pending CI | `npm run check` passes: lint, format, typecheck, 29 unit and component tests |
-| P0-3 | ✅ (component + E2E smoke) / pending CI (signed-in E2E) | `routes.test.tsx`, `smoke.spec.ts`. `auth.spec.ts` runs in CI with the owner account. |
-| P0-4 | Pending CI | `enable_signup = false` in `supabase/config.toml`; asserted by `tests/integration/foundation.test.ts` |
-| P0-5 | ✅ | ADR-0002 Results section |
-| P0-6 | ✅ | `secret-scan.test.ts`, plus a manual run: injecting a fake service-role JWT into `dist/` made `npm run check:secrets` exit 1 |
+| P0-1 | ✅ | CI job `supabase` on a clean Ubuntu runner: `npm ci` → `supabase start` → migrations → owner → integration → E2E |
+| P0-2 | ✅ | `npm run check` locally. CI jobs `quality`, `deno`, `supabase`, `secrets` all green. |
+| P0-3 | ✅ | `routes.test.tsx` (component), `smoke.spec.ts` (redirect), `auth.spec.ts` (owner signs in, visits sections, survives reload, signs out). 3/3 Playwright tests passed in CI. |
+| P0-4 | ✅ | `foundation.test.ts › rejects self-registration` passes with the email provider enabled |
+| P0-5 | ✅ | ADR-0002 Results. The Edge Function, served by the Supabase edge runtime in CI, returns a schema-valid response. |
+| P0-6 | ✅ | `secret-scan.test.ts`, plus a manual injection of a fake service-role JWT into `dist/` (exit 1) |
+
+Database guard: `000_baseline_privileges.test.sql` 5/5 in CI. Generated types match the schema (drift check green).
+
+### Lessons recorded during CI bring-up
+- In the Supabase CLI, `[auth.email] enable_signup` toggles the **email provider itself**. Registration is blocked by `[auth] enable_signup = false` alone.
+- `ALTER DEFAULT PRIVILEGES … IN SCHEMA` cannot remove the global `PUBLIC` EXECUTE default on functions. A global revoke for the migration role is required.
+- `vite preview` must bind `127.0.0.1` explicitly for Playwright on CI runners (`localhost` → `::1`).
+- Failed CI steps publish their output tail as annotations (`.github/scripts/run-annotated.sh`), so failures can be read through the Checks API.
 
 ### Notable decisions
 - Toolchain versions: ADR-0010 (TypeScript 6.0, ESLint 9).

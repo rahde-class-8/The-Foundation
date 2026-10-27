@@ -57,4 +57,4 @@ See the table in the root `README.md`.
 | Step | Verified in |
 |---|---|
 | `npm ci`, `npm run check`, `npm run build`, secret scan, Playwright smoke, `deno check` | Development container and CI |
-| `supabase start`, `db reset`, pgTAP, owner creation, integration tests, authenticated E2E, type generation | CI only. The development container's network policy blocks container-registry downloads. |
+| `supabase start`, pgTAP, owner creation, integration tests, authenticated E2E, type generation | CI (green). The cloud development container's network policy blocks container-registry downloads, so these do not run there. |
