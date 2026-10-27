@@ -1,5 +1,5 @@
 begin;
-select plan(45);
+select plan(46);
 
 insert into auth.users (id, email, raw_app_meta_data) values
   ('00000000-0000-0000-0000-0000000000a1', 'owner@test.local', '{"role":"owner"}'),
@@ -98,6 +98,8 @@ select is((public.record_import_progress('00000000-0000-0000-0000-0000000000b2',
   '{"nextPage": 3}', 50) ->> 'passageCount')::int, 2, 're-sending the same passages adds nothing (P4-1)');
 select is((select cursor from public.import_jobs where id = pg_temp.id('job')), '{"nextPage": 3}'::jsonb,
   'the cursor lets an interrupted job resume (P4-2)');
+select is((public.claim_import_job('00000000-0000-0000-0000-0000000000b2', pg_temp.id('job')) ->> 'claimed')::boolean, true,
+  'a recorded batch releases the job, so the next call continues at once');
 select is((public.finish_import_job('00000000-0000-0000-0000-0000000000b2', pg_temp.id('job'), null, null, null, repeat('a', 64)) ->> 'status'),
   'succeeded', 'a finished job succeeds');
 reset role;

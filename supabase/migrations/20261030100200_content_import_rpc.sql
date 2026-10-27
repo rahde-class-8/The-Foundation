@@ -666,7 +666,7 @@ begin
   if v_job.status in ('succeeded', 'failed', 'cancelled') then
     return jsonb_build_object('claimed', false, 'busy', false, 'job', private.job_json(v_job));
   end if;
-  if v_job.status = 'running' and v_job.heartbeat_at > now() - interval '2 minutes' then
+  if v_job.status = 'running' and v_job.heartbeat_at is not null and v_job.heartbeat_at > now() - interval '2 minutes' then
     return jsonb_build_object('claimed', false, 'busy', true, 'job', private.job_json(v_job));
   end if;
   update public.import_jobs j set
@@ -714,8 +714,10 @@ begin
   if p_page_count is not null then
     update public.content_sources s set page_count = p_page_count where s.id = v_job.source_id;
   end if;
+  -- Clearing the heartbeat releases the claim, so the next invocation continues at once; a crashed
+  -- invocation leaves its heartbeat set and the job resumes once that is two minutes old.
   update public.import_jobs j set
-    cursor = p_cursor, progress_pct = least(greatest(p_progress, 0), 100), heartbeat_at = now(),
+    cursor = p_cursor, progress_pct = least(greatest(p_progress, 0), 100), heartbeat_at = null,
     passage_count = (select count(*) from public.source_passages p where p.source_id = v_job.source_id)
   where j.id = v_job.id returning * into v_job;
   return private.job_json(v_job);
