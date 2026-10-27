@@ -1,0 +1,296 @@
+slug: elastic-load-balancing
+name: Elastic Load Balancing
+aliases: [ELB, ALB, NLB]
+category: networking
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/what-is-load-balancing.html
+summary: Managed load balancers that distribute incoming traffic across healthy targets in multiple Availability Zones.
+
+dimensions:
+  what: |
+    A family of managed load balancers: **Application Load Balancer** (HTTP/HTTPS, layer 7), **Network Load
+    Balancer** (TCP/UDP/TLS, layer 4), **Gateway Load Balancer** (third-party network appliances), and the legacy
+    Classic Load Balancer.
+  how: |
+    Listeners accept connections on a port and protocol; rules forward requests to **target groups** (instances, IP
+    addresses, Lambda functions, or another ALB). Health checks remove unhealthy targets from rotation. The load
+    balancer runs in subnets in each enabled Availability Zone.
+  problem: |
+    A single server is a single point of failure and cannot absorb variable traffic; clients need one stable endpoint.
+  solution: |
+    One DNS name in front of many targets across AZs, with health checks, TLS termination, and automatic scaling of
+    the load balancer itself.
+  not_do: |
+    - It does not add or remove your targets; pair it with an Auto Scaling group for that.
+    - It is a Regional service: routing between Regions needs Route 53 or AWS Global Accelerator.
+    - An ALB does not handle non-HTTP protocols such as raw TCP or UDP (use an NLB).
+  when: |
+    Whenever more than one target serves the same traffic, or you need TLS termination, path- or host-based routing
+    (ALB), or extreme performance and static IPs (NLB).
+  where: |
+    At the front of the application tier, in public subnets for internet-facing traffic (or private subnets for
+    internal tiers), forwarding to targets in private subnets.
+  trade_offs: |
+    Managed availability and scaling, in exchange for an hourly plus capacity-unit charge and an added network hop.
+    ALB offers rich routing; NLB offers lower latency and static IPs but routes only at layer 4.
+
+related:
+  - {
+      service: ec2,
+      relation: commonly_paired_with,
+      note: 'Targets are commonly EC2 instances in an Auto Scaling group.',
+    }
+  - {
+      service: lambda,
+      relation: commonly_paired_with,
+      note: 'An ALB can invoke Lambda functions as targets.',
+    }
+
+concepts:
+  - slug: load-balancer-types
+    title: ALB vs NLB vs GWLB
+    summary: ALB routes HTTP(S) at layer 7, NLB forwards TCP/UDP/TLS at layer 4 with static IPs, and GWLB inserts network appliances.
+    explanation: |
+      - **Application Load Balancer**: layer 7; routes on host, path, headers, query strings, and methods; supports
+        WebSockets, HTTP/2, and Lambda targets.
+      - **Network Load Balancer**: layer 4; handles very high throughput at low latency, provides a static IP per
+        AZ (and supports Elastic IPs), and preserves the client source IP for instance targets.
+      - **Gateway Load Balancer**: deploys and scales third-party virtual appliances (firewalls, IDS) transparently,
+        using GENEVE encapsulation.
+    examples: |
+      A microservices API uses one ALB with path rules; a gaming backend with UDP traffic and allow-listed IPs uses an NLB.
+    limitations: |
+      Clients that must allow-list fixed IP addresses cannot rely on an ALB's changing IPs (use an NLB, or Global
+      Accelerator in front of an ALB).
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+      - { certification: aws/SAA/C03, domain: D2, relevance: supporting }
+    citations:
+      - source: elb-what-is
+        excerpt: Elastic Load Balancing supports Application Load Balancers, Network Load Balancers, Gateway Load Balancers, and Classic Load Balancers.
+        excerptKind: paraphrase
+        supports: defines
+      - source: nlb-introduction
+        excerpt: A Network Load Balancer functions at layer 4, can handle millions of requests per second, and supports a static IP address per Availability Zone.
+        excerptKind: paraphrase
+        supports: evidence
+    questions:
+      - key: alb-or-nlb
+        dimension: when
+        difficulty: 2
+        prompt: A client must allow-list fixed IP addresses for your service, which uses TCP. Which load balancer fits, and why not the others?
+        referenceAnswer: |
+          A Network Load Balancer: it works at layer 4 (TCP/UDP/TLS) and provides a static IP per Availability Zone,
+          optionally Elastic IPs. An ALB is layer 7 (HTTP/HTTPS) and its IP addresses change, and a Gateway Load
+          Balancer is for inserting network appliances, not serving client traffic.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Choose a Network Load Balancer', weight: 3, critical: true }
+            - {
+                id: p2,
+                text: 'NLB offers static IPs per AZ / Elastic IPs',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'ALB is layer 7 HTTP(S) with changing IPs',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: target-groups-health-checks
+    title: Target groups and health checks
+    summary: Listeners forward to target groups, and health checks keep traffic away from unhealthy targets.
+    explanation: |
+      A **target group** holds targets of one type (instance, IP, Lambda, or ALB) and defines the protocol, port,
+      and **health check**. The load balancer sends traffic only to healthy targets and resumes when a target passes
+      its checks again. Auto Scaling groups can use the load balancer health check to replace failing instances.
+    examples: |
+      A health check on `/health` marks an instance unhealthy when its database connection fails, so the ALB stops
+      routing to it and the Auto Scaling group replaces it.
+    limitations: |
+      A shallow health check (just "port is open") can keep routing to an instance whose application is broken.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: elb-how-it-works
+        excerpt: The load balancer routes traffic only to healthy registered targets and uses health checks to monitor them; when a target becomes healthy again the load balancer resumes routing traffic to it.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: health-check-role
+        dimension: how
+        difficulty: 1
+        prompt: What happens when a target fails its load balancer health check, and how can an Auto Scaling group use that signal?
+        referenceAnswer: |
+          The load balancer stops routing new requests to the unhealthy target and resumes once it passes health
+          checks again. If the Auto Scaling group uses ELB health checks, it treats the instance as unhealthy and
+          replaces it.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Traffic stops going to the unhealthy target',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'ASG with ELB health checks replaces the instance',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Routing resumes when the target is healthy again',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: cross-zone-load-balancing
+    title: Cross-zone load balancing
+    summary: With cross-zone load balancing, each load balancer node spreads traffic across targets in all enabled AZs, not just its own.
+    explanation: |
+      Clients resolve the load balancer's DNS name to nodes in each enabled AZ. With **cross-zone load balancing**,
+      each node distributes traffic across registered targets in all AZs, so uneven target counts per AZ still get
+      even load. It is enabled by default for ALBs and disabled by default for NLBs and GWLBs (where cross-AZ data
+      transfer may be charged).
+    examples: |
+      AZ-a has 2 instances and AZ-b has 8. Without cross-zone, each AZ-a instance takes 25% of traffic; with it, every
+      instance takes about 10%.
+    limitations: |
+      Enabling cross-zone on an NLB can add inter-AZ data transfer charges.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D4, relevance: supporting }
+    citations:
+      - source: elb-how-it-works
+        section: Cross-zone load balancing
+        excerpt: With cross-zone load balancing enabled, each load balancer node distributes traffic across the registered targets in all enabled Availability Zones; it is on by default for Application Load Balancers and off by default for Network Load Balancers.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: uneven-azs
+        dimension: how
+        difficulty: 2
+        prompt: An NLB has 2 targets in one AZ and 8 in another, and the 2 targets are overloaded. Explain why and how to fix it.
+        referenceAnswer: |
+          Cross-zone load balancing is off by default for NLBs, so each AZ's node sends its share of traffic (about
+          half) only to targets in its own AZ: the 2 targets each take about 25%. Enable cross-zone load balancing
+          (accepting possible inter-AZ data charges) or balance target counts across AZs.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Cross-zone is disabled by default on NLB',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Each AZ node only uses its own AZ targets, overloading the smaller AZ',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Fix: enable cross-zone or balance targets per AZ',
+                weight: 2,
+                critical: true,
+              }
+            - { id: p4, text: 'Possible inter-AZ data transfer cost', weight: 1, critical: false }
+
+  - slug: tls-termination
+    title: TLS termination and certificates
+    summary: HTTPS and TLS listeners terminate encryption at the load balancer using certificates, typically from AWS Certificate Manager.
+    explanation: |
+      An HTTPS (ALB) or TLS (NLB) listener decrypts traffic at the load balancer using a certificate, typically
+      issued and renewed automatically by **AWS Certificate Manager (ACM)**. Multiple certificates on one listener
+      are selected with **SNI**. Traffic to targets can be re-encrypted if end-to-end encryption is required, or an
+      NLB can pass TLS through to the targets with a TCP listener.
+    examples: |
+      One ALB serves `app.example.com` and `api.example.com` with two ACM certificates selected by SNI.
+    limitations: |
+      Terminating TLS at the load balancer means traffic to targets is unencrypted unless you configure HTTPS to the targets.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: alb-introduction
+        excerpt: Application Load Balancers support HTTPS listeners that use certificates to decrypt requests from clients, and can serve multiple certificates using Server Name Indication.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: offload-tls
+        dimension: solution
+        difficulty: 2
+        prompt: How would you serve HTTPS for two domains from one Application Load Balancer, and what is the security consideration for traffic to the targets?
+        referenceAnswer: |
+          Create an HTTPS listener with ACM certificates for both domains; the ALB selects the right certificate with
+          SNI and terminates TLS. Traffic from the ALB to the targets is plaintext unless you configure HTTPS target
+          groups to re-encrypt it, which may be needed for compliance.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'HTTPS listener with certificates (ACM) for both domains',
+                weight: 2,
+                critical: true,
+              }
+            - { id: p2, text: 'SNI selects the certificate per domain', weight: 2, critical: true }
+            - {
+                id: p3,
+                text: 'Backend traffic is unencrypted unless re-encrypted to targets',
+                weight: 2,
+                critical: false,
+              }
+
+  - slug: alb-routing-rules
+    title: ALB listener rules and routing
+    summary: ALB rules route requests by host, path, headers, methods, or query strings, and can redirect or return fixed responses.
+    explanation: |
+      Each ALB listener has rules evaluated in **priority order**, with a default rule last. Conditions match host
+      headers, paths, HTTP headers, methods, query strings, or source IPs; actions forward to target groups
+      (optionally weighted), redirect (for example HTTP to HTTPS), return a fixed response, or authenticate users
+      through Amazon Cognito or an OIDC provider.
+    examples: |
+      `/api/*` forwards to the API target group, `/images/*` to a separate fleet, and port 80 redirects to HTTPS.
+      Weighted forwarding sends 10% of traffic to a new version for a canary release.
+    limitations: |
+      NLBs do not inspect HTTP, so content-based routing requires an ALB.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+    citations:
+      - source: alb-introduction
+        excerpt: Application Load Balancer listener rules are evaluated in priority order and route requests based on conditions such as host, path, headers, and query strings to target groups.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: path-routing
+        dimension: how
+        difficulty: 1
+        prompt: How can one Application Load Balancer route `/api/*` and `/static/*` to different services, and what decides which rule applies?
+        referenceAnswer: |
+          Add listener rules with path conditions that forward `/api/*` to one target group and `/static/*` to
+          another. Rules are evaluated in priority order; the first matching rule applies, and the default rule
+          handles anything unmatched.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Listener rules with path-based conditions forward to different target groups',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Rules are evaluated in priority order; a default rule catches the rest',
+                weight: 2,
+                critical: true,
+              }

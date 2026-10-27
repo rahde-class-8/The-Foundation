@@ -1,0 +1,12 @@
+# Domain names and weights follow the SAA-C03 exam guide. Confirm the exam version is still current
+# before publishing content against it (open question Q7).
+vendor: aws
+code: SAA
+examVersion: C03
+name: AWS Certified Solutions Architect – Associate
+examGuideUrl: https://aws.amazon.com/certification/certified-solutions-architect-associate/
+domains:
+  - { code: D1, name: Design Secure Architectures, weightPct: 30 }
+  - { code: D2, name: Design Resilient Architectures, weightPct: 26 }
+  - { code: D3, name: Design High-Performing Architectures, weightPct: 24 }
+  - { code: D4, name: Design Cost-Optimized Architectures, weightPct: 20 }

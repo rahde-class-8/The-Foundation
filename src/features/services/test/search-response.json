@@ -1,0 +1,30 @@
+{
+  "items": [
+    {
+      "id": "b626aa7d-aa90-4f4d-a41b-206d8651e8bb",
+      "name": "AWS Lambda",
+      "slug": "lambda",
+      "status": "in_review",
+      "aliases": ["Lambda"],
+      "category": {
+        "id": "172a743a-522f-4672-a85d-b8699bd390cc",
+        "name": "Compute",
+        "slug": "compute"
+      },
+      "progress": {
+        "studied": 0,
+        "reviewingOrBetter": 0
+      },
+      "summaryMd": "Event-driven, serverless compute that runs your code in managed execution environments and bills per request and duration.",
+      "conceptCount": 6,
+      "matchedConcepts": [
+        {
+          "id": "7c753e95-d89e-4dff-90cd-ca21aa42cfb0",
+          "slug": "concurrency",
+          "title": "Concurrency and scaling"
+        }
+      ]
+    }
+  ],
+  "nextCursor": null
+}

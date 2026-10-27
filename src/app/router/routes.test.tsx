@@ -1,6 +1,21 @@
 import { screen, within } from '@testing-library/react';
+import facets from '@/features/services/test/facets-response.json';
+import profile from '@/features/services/test/profile-response.json';
+import search from '@/features/services/test/search-response.json';
 import { authValue, fakeSession, renderRoutes } from '@/test/auth';
 import { routes } from './routes';
+
+vi.mock('@/features/services/api/catalog', async () => {
+  const { FacetsSchema, SearchPageSchema, ServiceProfileSchema } =
+    await import('@/features/services/api/schemas');
+  return {
+    PAGE_SIZE: 24,
+    searchCatalog: vi.fn().mockResolvedValue(SearchPageSchema.parse(search)),
+    getCatalogFacets: vi.fn().mockResolvedValue(FacetsSchema.parse(facets)),
+    getServiceProfile: vi.fn().mockResolvedValue(ServiceProfileSchema.parse(profile)),
+    markConceptExposed: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 describe('route guard', () => {
   it('redirects an unauthenticated visitor to /login (AUTH-1a)', async () => {
@@ -29,7 +44,7 @@ describe('route guard', () => {
 
   it.each([
     ['/services', 'Service library'],
-    ['/services/lambda', 'Service mastery profile'],
+    ['/services/lambda', 'AWS Lambda'],
     ['/practice', 'Practice'],
     ['/reviews', 'Weak Box'],
     ['/content', 'Content'],

@@ -4,7 +4,7 @@
 It implements SYSTEM_ARCHITECTURE §8.
 
 ```text
-aws-architecture-muscle-memory/
+the-foundation/
 ├── .github/workflows/            # CI pipelines (Phase 0)
 ├── content/catalog/saa/          # Curated SAA catalog YAML: services, concepts, questions, rubrics, citations (ADR-0007)
 ├── docs/                         # Planning and project documentation

@@ -25,6 +25,8 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
+      - name: Validate curated catalog
+        run: .github/scripts/run-annotated.sh npm run catalog:validate
       - run: .github/scripts/run-annotated.sh npm run test:coverage
       - name: Build
         run: npm run build
@@ -76,9 +78,15 @@ jobs:
             exit 1
           fi
       - run: .github/scripts/run-annotated.sh npm run db:create-owner
+      - name: Import curated catalog
+        run: .github/scripts/run-annotated.sh npm run catalog:import
+      - name: Re-import is idempotent (P1-1)
+        run: .github/scripts/run-annotated.sh npm run catalog:import -- --expect-no-changes
       - run: npm run env:local
       - name: Integration tests
         run: .github/scripts/run-annotated.sh npm run test:int
+      - name: Load the catalog performance fixture (P1-4)
+        run: .github/scripts/run-annotated.sh npm run catalog:import -- --fixture perf
       - run: npx playwright install --with-deps chromium
       - name: End-to-end tests
         run: .github/scripts/run-annotated.sh npm run test:e2e

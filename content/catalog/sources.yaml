@@ -1,0 +1,349 @@
+# Official AWS pages cited by the seed content. None has been checked against its excerpts yet,
+# so none has `retrievedAt` (see content/catalog/README.md). Confirm each URL when verifying.
+sources:
+  # IAM
+  - {
+      key: iam-what-is,
+      type: aws_documentation,
+      title: 'IAM User Guide: What is IAM?',
+      url: 'https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html',
+    }
+  - {
+      key: iam-policy-evaluation,
+      type: aws_documentation,
+      title: 'IAM User Guide: Policy evaluation logic',
+      url: 'https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html',
+    }
+  - {
+      key: iam-roles,
+      type: aws_documentation,
+      title: 'IAM User Guide: IAM roles',
+      url: 'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html',
+    }
+  - {
+      key: iam-identity-vs-resource,
+      type: aws_documentation,
+      title: 'IAM User Guide: Identity-based and resource-based policies',
+      url: 'https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_identity-vs-resource.html',
+    }
+  - {
+      key: iam-best-practices,
+      type: aws_documentation,
+      title: 'IAM User Guide: Security best practices in IAM',
+      url: 'https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html',
+    }
+  # VPC
+  - {
+      key: vpc-what-is,
+      type: aws_documentation,
+      title: 'Amazon VPC User Guide: What is Amazon VPC?',
+      url: 'https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html',
+    }
+  - {
+      key: vpc-subnets,
+      type: aws_documentation,
+      title: 'Amazon VPC User Guide: Subnets for your VPC',
+      url: 'https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html',
+    }
+  - {
+      key: vpc-nat-gateway,
+      type: aws_documentation,
+      title: 'Amazon VPC User Guide: NAT gateways',
+      url: 'https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html',
+    }
+  - {
+      key: vpc-security-groups,
+      type: aws_documentation,
+      title: 'Amazon VPC User Guide: Security groups',
+      url: 'https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html',
+    }
+  - {
+      key: vpc-network-acls,
+      type: aws_documentation,
+      title: 'Amazon VPC User Guide: Network ACLs',
+      url: 'https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html',
+    }
+  - {
+      key: vpc-gateway-endpoints,
+      type: aws_documentation,
+      title: 'AWS PrivateLink: Gateway endpoints',
+      url: 'https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html',
+    }
+  - {
+      key: vpc-peering,
+      type: aws_documentation,
+      title: 'Amazon VPC Peering Guide: What is VPC peering?',
+      url: 'https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html',
+    }
+  # EC2
+  - {
+      key: ec2-instance-types,
+      type: aws_documentation,
+      title: 'Amazon EC2 User Guide: Instance types',
+      url: 'https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html',
+    }
+  - {
+      key: ec2-purchasing-options,
+      type: aws_documentation,
+      title: 'Amazon EC2 User Guide: Instance purchasing options',
+      url: 'https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-purchasing-options.html',
+    }
+  - {
+      key: ec2-instance-store,
+      type: aws_documentation,
+      title: 'Amazon EC2 User Guide: Instance store temporary block storage',
+      url: 'https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html',
+    }
+  - {
+      key: ebs-what-is,
+      type: aws_documentation,
+      title: 'Amazon EBS User Guide: What is Amazon EBS?',
+      url: 'https://docs.aws.amazon.com/ebs/latest/userguide/what-is-ebs.html',
+    }
+  - {
+      key: ec2-placement-groups,
+      type: aws_documentation,
+      title: 'Amazon EC2 User Guide: Placement groups',
+      url: 'https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html',
+    }
+  - {
+      key: ec2-auto-scaling,
+      type: aws_documentation,
+      title: 'Amazon EC2 Auto Scaling User Guide: What is Amazon EC2 Auto Scaling?',
+      url: 'https://docs.aws.amazon.com/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html',
+    }
+  # ELB
+  - {
+      key: elb-what-is,
+      type: aws_documentation,
+      title: 'Elastic Load Balancing User Guide: What is Elastic Load Balancing?',
+      url: 'https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/what-is-load-balancing.html',
+    }
+  - {
+      key: alb-introduction,
+      type: aws_documentation,
+      title: 'Application Load Balancers: What is an Application Load Balancer?',
+      url: 'https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html',
+    }
+  - {
+      key: nlb-introduction,
+      type: aws_documentation,
+      title: 'Network Load Balancers: What is a Network Load Balancer?',
+      url: 'https://docs.aws.amazon.com/elasticloadbalancing/latest/network/introduction.html',
+    }
+  - {
+      key: elb-how-it-works,
+      type: aws_documentation,
+      title: 'Elastic Load Balancing User Guide: How Elastic Load Balancing works',
+      url: 'https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/how-elastic-load-balancing-works.html',
+    }
+  # S3
+  - {
+      key: s3-what-is,
+      type: aws_documentation,
+      title: 'Amazon S3 User Guide: What is Amazon S3?',
+      url: 'https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html',
+    }
+  - {
+      key: s3-storage-classes,
+      type: aws_documentation,
+      title: 'Amazon S3 User Guide: Understanding and managing storage classes',
+      url: 'https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html',
+    }
+  - {
+      key: s3-versioning,
+      type: aws_documentation,
+      title: 'Amazon S3 User Guide: Retaining multiple versions of objects with S3 Versioning',
+      url: 'https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html',
+    }
+  - {
+      key: s3-lifecycle,
+      type: aws_documentation,
+      title: 'Amazon S3 User Guide: Managing the lifecycle of objects',
+      url: 'https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html',
+    }
+  - {
+      key: s3-block-public-access,
+      type: aws_documentation,
+      title: 'Amazon S3 User Guide: Blocking public access to your Amazon S3 storage',
+      url: 'https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html',
+    }
+  - {
+      key: s3-performance,
+      type: aws_documentation,
+      title: 'Amazon S3 User Guide: Best practices design patterns: optimizing Amazon S3 performance',
+      url: 'https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance.html',
+    }
+  # RDS
+  - {
+      key: rds-what-is,
+      type: aws_documentation,
+      title: 'Amazon RDS User Guide: What is Amazon RDS?',
+      url: 'https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html',
+    }
+  - {
+      key: rds-multi-az,
+      type: aws_documentation,
+      title: 'Amazon RDS User Guide: Configuring and managing a Multi-AZ deployment',
+      url: 'https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html',
+    }
+  - {
+      key: rds-read-replicas,
+      type: aws_documentation,
+      title: 'Amazon RDS User Guide: Working with DB instance read replicas',
+      url: 'https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ReadRepl.html',
+    }
+  - {
+      key: rds-backups,
+      type: aws_documentation,
+      title: 'Amazon RDS User Guide: Introduction to backups',
+      url: 'https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithAutomatedBackups.html',
+    }
+  - {
+      key: rds-encryption,
+      type: aws_documentation,
+      title: 'Amazon RDS User Guide: Encrypting Amazon RDS resources',
+      url: 'https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html',
+    }
+  # DynamoDB
+  - {
+      key: dynamodb-what-is,
+      type: aws_documentation,
+      title: 'Amazon DynamoDB Developer Guide: What is Amazon DynamoDB?',
+      url: 'https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html',
+    }
+  - {
+      key: dynamodb-core-components,
+      type: aws_documentation,
+      title: 'Amazon DynamoDB Developer Guide: Core components of Amazon DynamoDB',
+      url: 'https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html',
+    }
+  - {
+      key: dynamodb-capacity-modes,
+      type: aws_documentation,
+      title: 'Amazon DynamoDB Developer Guide: Throughput capacity modes',
+      url: 'https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html',
+    }
+  - {
+      key: dynamodb-read-consistency,
+      type: aws_documentation,
+      title: 'Amazon DynamoDB Developer Guide: Read consistency',
+      url: 'https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html',
+    }
+  - {
+      key: dynamodb-secondary-indexes,
+      type: aws_documentation,
+      title: 'Amazon DynamoDB Developer Guide: Improving data access with secondary indexes',
+      url: 'https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html',
+    }
+  - {
+      key: dynamodb-global-tables,
+      type: aws_documentation,
+      title: 'Amazon DynamoDB Developer Guide: Global tables',
+      url: 'https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html',
+    }
+  # Lambda
+  - {
+      key: lambda-what-is,
+      type: aws_documentation,
+      title: 'AWS Lambda Developer Guide: What is AWS Lambda?',
+      url: 'https://docs.aws.amazon.com/lambda/latest/dg/welcome.html',
+    }
+  - {
+      key: lambda-quotas,
+      type: aws_documentation,
+      title: 'AWS Lambda Developer Guide: Lambda quotas',
+      url: 'https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html',
+    }
+  - {
+      key: lambda-invocation,
+      type: aws_documentation,
+      title: 'AWS Lambda Developer Guide: Understanding Lambda function invocation methods',
+      url: 'https://docs.aws.amazon.com/lambda/latest/dg/lambda-invocation.html',
+    }
+  - {
+      key: lambda-concurrency,
+      type: aws_documentation,
+      title: 'AWS Lambda Developer Guide: Understanding Lambda function scaling',
+      url: 'https://docs.aws.amazon.com/lambda/latest/dg/lambda-concurrency.html',
+    }
+  - {
+      key: lambda-execution-role,
+      type: aws_documentation,
+      title: 'AWS Lambda Developer Guide: Defining Lambda function permissions with an execution role',
+      url: 'https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html',
+    }
+  - {
+      key: lambda-vpc,
+      type: aws_documentation,
+      title: 'AWS Lambda Developer Guide: Giving Lambda functions access to resources in an Amazon VPC',
+      url: 'https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html',
+    }
+  - {
+      key: lambda-execution-environment,
+      type: aws_documentation,
+      title: 'AWS Lambda Developer Guide: Understanding the Lambda execution environment lifecycle',
+      url: 'https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html',
+    }
+  # SQS
+  - {
+      key: sqs-what-is,
+      type: aws_documentation,
+      title: 'Amazon SQS Developer Guide: What is Amazon Simple Queue Service?',
+      url: 'https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html',
+    }
+  - {
+      key: sqs-queue-types,
+      type: aws_documentation,
+      title: 'Amazon SQS Developer Guide: Amazon SQS queue types',
+      url: 'https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-queue-types.html',
+    }
+  - {
+      key: sqs-visibility-timeout,
+      type: aws_documentation,
+      title: 'Amazon SQS Developer Guide: Amazon SQS visibility timeout',
+      url: 'https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html',
+    }
+  - {
+      key: sqs-long-polling,
+      type: aws_documentation,
+      title: 'Amazon SQS Developer Guide: Amazon SQS short and long polling',
+      url: 'https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-short-and-long-polling.html',
+    }
+  - {
+      key: sqs-dead-letter-queues,
+      type: aws_documentation,
+      title: 'Amazon SQS Developer Guide: Using dead-letter queues in Amazon SQS',
+      url: 'https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html',
+    }
+  # SNS
+  - {
+      key: sns-what-is,
+      type: aws_documentation,
+      title: 'Amazon SNS Developer Guide: What is Amazon SNS?',
+      url: 'https://docs.aws.amazon.com/sns/latest/dg/welcome.html',
+    }
+  - {
+      key: sns-fanout,
+      type: aws_documentation,
+      title: 'Amazon SNS Developer Guide: Fanout Amazon SNS notifications to Amazon SQS queues',
+      url: 'https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html',
+    }
+  - {
+      key: sns-message-filtering,
+      type: aws_documentation,
+      title: 'Amazon SNS Developer Guide: Amazon SNS message filtering',
+      url: 'https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html',
+    }
+  - {
+      key: sns-fifo-topics,
+      type: aws_documentation,
+      title: 'Amazon SNS Developer Guide: Amazon SNS FIFO topics',
+      url: 'https://docs.aws.amazon.com/sns/latest/dg/sns-fifo-topics.html',
+    }
+  - {
+      key: sns-message-delivery-retries,
+      type: aws_documentation,
+      title: 'Amazon SNS Developer Guide: Amazon SNS message delivery retries',
+      url: 'https://docs.aws.amazon.com/sns/latest/dg/sns-message-delivery-retries.html',
+    }

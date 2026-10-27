@@ -1,6 +1,6 @@
-# AWS Architecture Muscle Memory
+# The Foundation
 
-A single-user study app that builds automatic recall of AWS services and architectural decision-making,
+An AWS architecture study app (single user) that builds automatic recall of AWS services and architectural decision-making,
 starting with the AWS Solutions Architect Associate (SAA) exam.
 
 > **"The foundation: every service, as muscle memory."**

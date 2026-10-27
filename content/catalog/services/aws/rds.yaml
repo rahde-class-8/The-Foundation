@@ -1,0 +1,277 @@
+slug: rds
+name: Amazon Relational Database Service
+aliases: [RDS]
+category: database
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html
+summary: Managed relational databases (such as MySQL, PostgreSQL, MariaDB, Oracle, and SQL Server) with automated backups, patching, and high-availability options.
+
+dimensions:
+  what: |
+    A managed service that runs relational database engines for you: provisioning, storage, patching, backups,
+    monitoring, and failover are handled by AWS, while you manage schemas, queries, and configuration.
+  how: |
+    You create a DB instance (or Multi-AZ DB cluster) with an engine, instance class, and storage, in a DB subnet
+    group in your VPC. RDS takes automated backups, applies maintenance in windows you choose, and can maintain a
+    synchronous standby in another AZ and asynchronous read replicas.
+  problem: |
+    Running databases on servers means owning installation, patching, backups, replication, and failover, which is
+    undifferentiated and error-prone work.
+  solution: |
+    Managed operations and built-in features (automated backups with point-in-time recovery, Multi-AZ failover, read
+    replicas, encryption) behind a standard database endpoint.
+  not_do: |
+    - It does not give you OS or host access (RDS Custom is the exception for some engines).
+    - Read replicas do not provide automatic failover; Multi-AZ does.
+    - It does not scale writes horizontally; a single primary takes writes (consider sharding, Aurora, or DynamoDB).
+  when: |
+    Relational data with SQL, transactions, joins, and existing engine compatibility, when you want AWS to operate the
+    database.
+  where: |
+    The data tier in private subnets across at least two AZs, reached by the application tier through security groups.
+  trade_offs: |
+    Less operational work and built-in resilience, in exchange for less control (no OS access, managed parameter
+    changes), instance-based pricing, and vertical scaling limits for writes.
+
+related:
+  - {
+      service: dynamodb,
+      relation: alternative_to,
+      note: 'Key-value/document access at any scale without SQL joins.',
+    }
+  - {
+      service: vpc,
+      relation: commonly_paired_with,
+      note: 'Runs in private subnets defined by a DB subnet group.',
+    }
+
+concepts:
+  - slug: managed-scope
+    title: What RDS manages and what you manage
+    summary: AWS operates the host, OS, engine patching, backups, and failover; you own schema, queries, users, and parameter choices.
+    explanation: |
+      RDS supports engines such as MySQL, PostgreSQL, MariaDB, Oracle, SQL Server, and Db2 (Aurora is a related but
+      separate engine family). AWS manages hardware, OS, engine installation and patching, storage, and automated
+      backups. You choose the instance class, storage type, maintenance and backup windows, parameter groups, and
+      handle database design and performance tuning. You get a database endpoint, not shell access.
+    examples: |
+      Need a custom OS-level agent on the database host? Standard RDS does not allow it; consider RDS Custom or EC2.
+    limitations: |
+      Engine features that require superuser or OS access may be unavailable.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: rds-what-is
+        excerpt: Amazon RDS is a managed service that makes it easier to set up, operate, and scale a relational database, handling tasks such as provisioning, patching, and backups, without providing shell access to the DB host.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: shared-responsibility
+        dimension: what
+        difficulty: 1
+        prompt: For a database on Amazon RDS, list what AWS manages and what remains your responsibility.
+        referenceAnswer: |
+          AWS manages the hardware, operating system, engine installation and patching, storage provisioning,
+          automated backups, and failover mechanisms. You manage the schema, queries and indexes, database users and
+          permissions, parameter and option settings, instance sizing, and network/security group configuration.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'AWS: hardware, OS, engine patching, backups, failover',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'You: schema, queries, users/permissions, configuration',
+                weight: 3,
+                critical: true,
+              }
+            - { id: p3, text: 'No OS/shell access on standard RDS', weight: 1, critical: false }
+
+  - slug: multi-az
+    title: Multi-AZ deployments
+    summary: Multi-AZ keeps a synchronous standby in another AZ and fails over automatically; the classic standby serves no reads.
+    explanation: |
+      A **Multi-AZ DB instance** deployment keeps a standby replica in a different AZ with **synchronous** replication.
+      If the primary fails (or during some maintenance), RDS **fails over automatically** by pointing the same DNS
+      endpoint at the standby, typically within a minute or two. The standby does not serve read traffic. A
+      **Multi-AZ DB cluster** (for MySQL and PostgreSQL) instead has two readable standbys.
+    examples: |
+      A production order database uses Multi-AZ so an AZ outage causes a brief failover instead of downtime.
+    limitations: |
+      Multi-AZ is for availability, not read scaling, and it does not protect against logical errors such as a bad
+      `DELETE` (backups do).
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: rds-multi-az
+        excerpt: In a Multi-AZ DB instance deployment, RDS maintains a synchronous standby replica in a different Availability Zone and automatically fails over to it if the primary fails; the standby does not serve read traffic.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: multi-az-vs-replica
+        dimension: trade_offs
+        difficulty: 2
+        prompt: Compare RDS Multi-AZ with read replicas. Which one provides automatic failover, and which one scales reads?
+        referenceAnswer: |
+          Multi-AZ keeps a synchronous standby in another AZ and fails over automatically on the same endpoint; the
+          (instance-style) standby serves no reads, so it is for high availability. Read replicas use asynchronous
+          replication, have their own endpoints, and serve reads to scale read traffic; they can be promoted
+          manually but do not fail over automatically.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Multi-AZ: synchronous standby with automatic failover',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Read replicas: asynchronous, readable, for read scaling',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Replicas need manual promotion; Multi-AZ standby is not readable',
+                weight: 1,
+                critical: false,
+              }
+          knownMisconceptions:
+            - slug: multi-az-scales-reads
+              statement: A Multi-AZ standby can be used to scale read traffic.
+              correction: A Multi-AZ DB instance standby serves no reads; use read replicas (or a Multi-AZ DB cluster) for reads.
+
+  - slug: read-replicas
+    title: Read replicas
+    summary: Read replicas copy data asynchronously to separate instances (even in other Regions) to offload reads, and can be promoted.
+    explanation: |
+      A **read replica** receives changes from the source instance through **asynchronous** replication, so reads may
+      lag slightly behind. Applications send read-only queries to the replica's own endpoint. Replicas can be in the
+      same Region or **cross-Region** (also useful for disaster recovery), and can be **promoted** to standalone
+      instances.
+    examples: |
+      A reporting dashboard queries a read replica so heavy analytics do not slow down the primary.
+    limitations: |
+      Replication lag means replicas can return stale data; promotion is manual and breaks replication.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+      - { certification: aws/SAA/C03, domain: D2, relevance: supporting }
+    citations:
+      - source: rds-read-replicas
+        excerpt: Read replicas use the engine's asynchronous replication to keep a copy of the source DB instance that can serve read queries, can be created in another Region, and can be promoted to a standalone DB instance.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: offload-reporting
+        dimension: solution
+        difficulty: 1
+        prompt: Heavy reporting queries slow down a production RDS database. How do you fix this with RDS features, and what caveat applies?
+        referenceAnswer: |
+          Create one or more read replicas and point the reporting queries at the replica endpoint, offloading reads
+          from the primary. Caveat: replication is asynchronous, so the replica may lag and return slightly stale data.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Use read replicas for the reporting reads',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Replication is asynchronous; data may be stale',
+                weight: 2,
+                critical: true,
+              }
+
+  - slug: backups-and-restore
+    title: Automated backups and snapshots
+    summary: Automated backups enable point-in-time recovery within a retention period of up to 35 days; manual snapshots persist until deleted.
+    explanation: |
+      **Automated backups** take daily snapshots plus transaction logs, enabling **point-in-time recovery** to any
+      second within the retention period (configurable up to **35 days**). **Manual snapshots** are kept until you
+      delete them and can be copied across Regions or shared with other accounts. Restoring always creates a **new**
+      DB instance with a new endpoint.
+    examples: |
+      After an accidental `DROP TABLE` at 14:05, restore to 14:04 into a new instance and repoint the application.
+    limitations: |
+      A restore does not overwrite the existing instance, so applications must switch endpoints.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: rds-backups
+        excerpt: RDS automated backups enable point-in-time recovery during a backup retention period that can be set up to 35 days, while manual snapshots are retained until you delete them.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: point-in-time
+        dimension: how
+        difficulty: 2
+        prompt: How do you recover an RDS database from an accidental table drop an hour ago, and what does the restore produce?
+        referenceAnswer: |
+          Use point-in-time recovery from automated backups (available within the retention period, up to 35 days) to
+          a time just before the drop. RDS creates a new DB instance with a new endpoint; you then repoint the
+          application or copy the data back.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Point-in-time recovery from automated backups',
+                weight: 3,
+                critical: true,
+              }
+            - { id: p2, text: 'Restore creates a new instance/endpoint', weight: 2, critical: true }
+            - { id: p3, text: 'Retention period up to 35 days', weight: 1, critical: false }
+
+  - slug: encryption
+    title: Encryption at rest and in transit
+    summary: Enable KMS encryption at creation; an unencrypted instance is encrypted by restoring from an encrypted snapshot copy.
+    explanation: |
+      RDS encrypts storage, automated backups, snapshots, and read replicas with **AWS KMS** keys when encryption is
+      enabled **at creation**. You cannot simply turn on encryption for an existing unencrypted instance: take a
+      snapshot, copy it with encryption enabled, and restore a new instance from the encrypted copy. Use SSL/TLS
+      connections for encryption in transit.
+    examples: |
+      An audit finds an unencrypted production database; the fix is snapshot → encrypted copy → restore → cut over.
+    limitations: |
+      Read replicas of an encrypted instance are encrypted too; mixing encrypted and unencrypted replicas is not possible.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: rds-encryption
+        excerpt: RDS encryption uses AWS KMS keys to encrypt DB instances, automated backups, read replicas, and snapshots; encryption can only be enabled when creating the DB instance, and an unencrypted instance is encrypted by restoring from an encrypted snapshot copy.
+        excerptKind: paraphrase
+        supports: limitation
+    questions:
+      - key: encrypt-existing
+        dimension: not_do
+        difficulty: 2
+        prompt: An existing RDS instance was created without encryption. Can you enable encryption on it directly? Describe the procedure.
+        referenceAnswer: |
+          No: encryption at rest can only be enabled when the instance is created. Take a snapshot, copy the snapshot
+          with encryption enabled (choosing a KMS key), restore a new DB instance from the encrypted copy, and switch
+          the application to the new endpoint.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Cannot enable encryption on an existing unencrypted instance',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Snapshot, encrypted copy, restore new instance, cut over',
+                weight: 3,
+                critical: true,
+              }

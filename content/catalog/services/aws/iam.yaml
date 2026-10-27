@@ -1,0 +1,285 @@
+slug: iam
+name: AWS Identity and Access Management
+aliases: [IAM]
+category: security-identity
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html
+summary: Controls who is authenticated and what they are authorized to do in an AWS account, using identities and JSON policies.
+
+dimensions:
+  what: |
+    The global AWS service for **authentication** (who you are) and **authorization** (what you may do) across an
+    account, using users, groups, roles, and policies.
+  how: |
+    Every AWS API request is signed by a principal. IAM evaluates the applicable policies (identity-based,
+    resource-based, permissions boundaries, session policies, and organization SCPs) and allows the request only if
+    an applicable policy allows it and no policy explicitly denies it.
+  problem: |
+    Sharing root credentials or long-lived keys gives everyone full, untraceable access. Teams and workloads need
+    individual, auditable, minimal permissions.
+  solution: |
+    Separate identities with granular policies, temporary credentials through roles, and a deny-by-default
+    evaluation model, so each person or workload gets only the actions it needs.
+  not_do: |
+    - It does not authenticate end users of your application (use Amazon Cognito) or replace your workforce
+      directory (IAM Identity Center federates with one).
+    - It does not encrypt data or inspect network traffic.
+    - It is not Regional: IAM identities and policies are global to the account.
+  when: |
+    Always: every AWS account uses IAM. Choose roles over users for workloads and for cross-account or federated access.
+  where: |
+    The shared security foundation under every layer: execution roles for Lambda, instance profiles for EC2,
+    bucket policies alongside IAM policies for S3, and cross-account roles between accounts.
+  trade_offs: |
+    Fine-grained control and auditability in exchange for policy complexity. Overly broad policies are easy to write
+    and risky; least privilege takes deliberate effort and tooling such as IAM Access Analyzer.
+
+related:
+  - {
+      service: lambda,
+      relation: commonly_paired_with,
+      note: 'Lambda assumes an execution role; invokers need resource-policy permission.',
+    }
+  - {
+      service: s3,
+      relation: commonly_paired_with,
+      note: 'S3 access combines IAM identity policies with bucket policies.',
+    }
+
+concepts:
+  - slug: identities
+    title: Users, groups, and roles
+    summary: Users have long-term credentials, groups attach policies to many users, and roles provide temporary credentials to whoever assumes them.
+    explanation: |
+      - **IAM user**: an identity with long-term credentials (password and/or access keys). Prefer federation for
+        people and roles for workloads.
+      - **IAM group**: a collection of users that share attached policies. Groups cannot be principals in policies
+        and cannot be nested.
+      - **IAM role**: an identity with policies but no long-term credentials. A trusted principal (a user, an AWS
+        service, another account, or a federated identity) assumes it and receives temporary credentials.
+      - **Root user**: the account owner with unrestricted access; lock it down with MFA and avoid daily use.
+    examples: |
+      Developers sign in through IAM Identity Center; EC2 instances use an instance profile (a role) to call S3.
+    limitations: |
+      A group is not an identity: you cannot reference a group as a principal in a resource-based policy.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: iam-what-is
+        excerpt: IAM lets you manage identities (users, groups, and roles) and control their access to AWS resources through policies.
+        excerptKind: paraphrase
+        supports: defines
+      - source: iam-roles
+        excerpt: A role is an identity with permission policies that is intended to be assumable by anyone who needs it and provides temporary security credentials rather than long-term credentials.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: user-vs-role
+        dimension: what
+        difficulty: 1
+        prompt: What is the key difference between an IAM user and an IAM role, and which should an application on EC2 use?
+        referenceAnswer: |
+          An IAM user has long-term credentials (password or access keys) tied to one identity. A role has no
+          long-term credentials; trusted principals assume it and receive temporary credentials. An application on
+          EC2 should use a role through an instance profile, never stored access keys.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Users have long-term credentials', weight: 2, critical: true }
+            - {
+                id: p2,
+                text: 'Roles are assumed and issue temporary credentials',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'EC2 applications should use a role via an instance profile',
+                weight: 2,
+                critical: true,
+              }
+
+  - slug: policy-evaluation
+    title: Policy evaluation logic
+    summary: Requests are denied by default, allowed only by an applicable allow, and always blocked by an explicit deny.
+    explanation: |
+      IAM starts from an **implicit deny**. A request is allowed only if an applicable policy grants an **allow**, and
+      any **explicit deny** in any applicable policy overrides every allow. Guardrails such as **service control
+      policies (SCPs)**, **permissions boundaries**, and **session policies** do not grant permissions; they set the
+      maximum that identity-based policies can allow.
+    examples: |
+      A user's policy allows `s3:*`, but an SCP denies `s3:DeleteBucket`: the user cannot delete buckets.
+    limitations: |
+      An SCP or permissions boundary that allows an action still grants nothing on its own; an identity-based or
+      resource-based allow is also needed.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: iam-policy-evaluation
+        excerpt: By default all requests are implicitly denied; an explicit allow in an applicable policy overrides the default, and an explicit deny in any policy overrides any allow.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: explicit-deny
+        dimension: how
+        difficulty: 2
+        prompt: Explain how IAM decides whether a request is allowed, including the roles of implicit deny, explicit allow, explicit deny, and SCPs.
+        referenceAnswer: |
+          Requests start implicitly denied. They are allowed only if an applicable identity- or resource-based policy
+          explicitly allows the action, and any explicit deny in any applicable policy overrides all allows. SCPs,
+          permissions boundaries, and session policies cap the maximum permissions but never grant access themselves.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Default is implicit deny', weight: 2, critical: true }
+            - { id: p2, text: 'An explicit allow is required', weight: 2, critical: true }
+            - { id: p3, text: 'An explicit deny always wins', weight: 3, critical: true }
+            - {
+                id: p4,
+                text: 'SCPs/boundaries limit permissions but do not grant them',
+                weight: 2,
+                critical: false,
+              }
+          knownMisconceptions:
+            - slug: scp-grants-permissions
+              statement: An SCP that allows an action grants that permission to users in the account.
+              correction: SCPs only set the maximum available permissions; an identity or resource policy must still allow the action.
+
+  - slug: roles-temporary-credentials
+    title: Roles and temporary credentials
+    summary: Assuming a role through AWS STS returns short-lived credentials, which enables cross-account and service access without stored keys.
+    explanation: |
+      A role has two parts: a **trust policy** (who may assume it) and **permissions policies** (what it may do).
+      Principals call AWS STS (for example `AssumeRole`) and receive credentials that expire automatically. AWS
+      services use roles too: EC2 through instance profiles, Lambda through execution roles.
+    examples: |
+      An auditing account assumes a read-only role in each workload account instead of holding keys for each one.
+    limitations: |
+      Both sides must agree: the role's trust policy must trust the caller, and the caller must be allowed to call
+      `sts:AssumeRole` on that role.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: iam-roles
+        excerpt: A role is assumed to obtain temporary security credentials; its trust policy defines which principals can assume it and its permissions policies define what it can do.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: cross-account-access
+        dimension: solution
+        difficulty: 2
+        prompt: How do you give users in account A access to resources in account B without creating IAM users in account B?
+        referenceAnswer: |
+          Create a role in account B with a trust policy that trusts account A (or specific principals in it) and
+          permissions policies for the required resources. Allow the users in account A to call sts:AssumeRole on
+          that role. They then assume it and use the temporary credentials.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Create a role in account B', weight: 2, critical: true }
+            - { id: p2, text: 'The role trust policy trusts account A', weight: 2, critical: true }
+            - {
+                id: p3,
+                text: 'Account A principals need permission to call sts:AssumeRole',
+                weight: 2,
+                critical: false,
+              }
+            - { id: p4, text: 'Access uses temporary credentials', weight: 1, critical: false }
+
+  - slug: identity-vs-resource-policies
+    title: Identity-based vs resource-based policies
+    summary: Identity-based policies attach to principals; resource-based policies attach to resources and name the principals they allow.
+    explanation: |
+      **Identity-based policies** attach to users, groups, or roles and say what that identity can do.
+      **Resource-based policies** attach to a resource (for example an S3 bucket policy, SQS queue policy, KMS key
+      policy, or Lambda function policy) and include a `Principal` element naming who may act on it. For access within
+      one account, an allow in either is generally enough; for cross-account access both sides must allow it.
+    examples: |
+      A bucket policy grants another account's role `s3:GetObject`; that role's identity policy must also allow it.
+    limitations: |
+      Not every service supports resource-based policies; where they are unsupported, cross-account access needs a role.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: iam-identity-vs-resource
+        excerpt: Identity-based policies are attached to an IAM identity and define what that identity can do, while resource-based policies are attached to a resource and specify which principals can access it.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: bucket-policy-vs-identity
+        dimension: how
+        difficulty: 2
+        prompt: Compare identity-based and resource-based policies and give an example of each.
+        referenceAnswer: |
+          Identity-based policies attach to users, groups, or roles and define what that identity may do (for
+          example a role policy allowing dynamodb:PutItem). Resource-based policies attach to a resource and name
+          the allowed principals (for example an S3 bucket policy or SQS queue policy). Cross-account access needs
+          both sides to allow the request.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Identity-based policies attach to identities',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Resource-based policies attach to resources and specify principals',
+                weight: 2,
+                critical: true,
+              }
+            - { id: p3, text: 'A correct example of each', weight: 1, critical: false }
+            - {
+                id: p4,
+                text: 'Cross-account access needs an allow on both sides',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: least-privilege
+    title: Least privilege and account security practices
+    summary: Grant only the permissions required, prefer temporary credentials, protect the root user with MFA, and review unused access.
+    explanation: |
+      Start with minimal permissions and add what is needed. Use roles and federation rather than long-term keys,
+      require MFA (especially on the root user, which should not be used for daily tasks), and use policy conditions
+      to narrow access. Tools such as IAM Access Analyzer help find unused permissions and external access.
+    examples: |
+      Replace a shared administrator user with role-based access through IAM Identity Center, and delete unused access keys.
+    limitations: |
+      Least privilege is a practice, not a setting: policies drift and must be reviewed over time.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: iam-best-practices
+        excerpt: AWS recommends granting least-privilege permissions, using temporary credentials through federation and roles, requiring MFA, and protecting the root user.
+        excerptKind: paraphrase
+        supports: evidence
+    questions:
+      - key: secure-new-account
+        dimension: when
+        difficulty: 1
+        prompt: List four IAM practices you would apply to secure a new AWS account.
+        referenceAnswer: |
+          Enable MFA on the root user and stop using it day to day; give people access through federation or IAM
+          Identity Center with roles rather than IAM users with keys; grant least-privilege permissions and review
+          them (for example with IAM Access Analyzer); use roles for workloads instead of embedding access keys.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Protect the root user with MFA and avoid using it',
+                weight: 2,
+                critical: true,
+              }
+            - { id: p2, text: 'Grant least-privilege permissions', weight: 2, critical: true }
+            - {
+                id: p3,
+                text: 'Prefer roles/federation and temporary credentials over long-term keys',
+                weight: 2,
+                critical: false,
+              }
+            - { id: p4, text: 'Review and remove unused access', weight: 1, critical: false }

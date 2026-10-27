@@ -1,0 +1,306 @@
+slug: s3
+name: Amazon Simple Storage Service
+aliases: [S3]
+category: storage
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html
+summary: Object storage for any amount of data, accessed over HTTPS APIs, with storage classes for different access patterns and costs.
+
+dimensions:
+  what: |
+    Object storage: you store **objects** (data plus metadata) under **keys** in **buckets**, and read and write them
+    through HTTP(S) APIs rather than a file system or block device.
+  how: |
+    Each bucket lives in one Region; objects are stored redundantly across multiple Availability Zones (except One
+    Zone classes). Access is controlled by IAM policies, bucket policies, Block Public Access, and encryption settings.
+    S3 provides strong read-after-write consistency for PUTs and DELETEs.
+  problem: |
+    Storing large, growing volumes of unstructured data (files, backups, logs, media, data lake data) durably, without
+    provisioning disks or managing file servers.
+  solution: |
+    Virtually unlimited capacity billed per GB-month and per request, designed for 99.999999999% (11 nines) durability,
+    with lifecycle rules that move data to cheaper classes as it ages.
+  not_do: |
+    - General purpose buckets are not a file system: no POSIX semantics, no in-place edits or appends to objects, no
+      file locking (use EFS or FSx for shared file systems).
+    - It is not block storage for an OS or database (use EBS).
+    - Bucket names are global, but data never leaves the bucket's Region unless you replicate or copy it.
+  when: |
+    Static website assets, backups and archives, data lakes, media, logs, and any data shared between services or
+    accounts through APIs.
+  where: |
+    The storage layer behind CloudFront for static content, the landing zone for data pipelines, and the event source
+    for processing (S3 event notifications to Lambda, SQS, SNS, or EventBridge).
+  trade_offs: |
+    Massive durability, scale, and low cost per GB, in exchange for API-based access (no file semantics), request
+    charges, and minimum storage durations and retrieval fees in the infrequent-access and archive classes.
+
+related:
+  - {
+      service: lambda,
+      relation: commonly_paired_with,
+      note: 'S3 event notifications invoke Lambda asynchronously.',
+    }
+  - {
+      service: iam,
+      relation: commonly_paired_with,
+      note: 'Access combines IAM policies with bucket policies.',
+    }
+  - {
+      service: ec2,
+      relation: often_confused_with,
+      note: 'EBS (block storage for EC2) is not object storage.',
+    }
+
+concepts:
+  - slug: object-model-and-consistency
+    title: Buckets, objects, and consistency
+    summary: Objects are addressed by bucket and key, and S3 provides strong read-after-write consistency.
+    explanation: |
+      A bucket is a Regional container with a globally unique name. Each object is identified by its key (the
+      "folders" in the console are just key prefixes). S3 offers **strong read-after-write consistency**: after a
+      successful PUT or DELETE, subsequent reads and LIST operations reflect the change. Use **multipart upload** for
+      large objects (recommended above about 100 MB) to upload parts in parallel and retry failed parts.
+    examples: |
+      `s3://media-bucket/2026/10/video.mp4`: `2026/10/` is part of the key, not a directory.
+    limitations: |
+      To "rename" an object you copy it to a new key and delete the old one.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: s3-what-is
+        excerpt: Amazon S3 stores data as objects within buckets, identified by keys, and provides strong read-after-write consistency for PUT and DELETE requests of objects.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: s3-not-filesystem
+        dimension: not_do
+        difficulty: 2
+        prompt: A team wants to mount an S3 bucket as a shared POSIX file system and append to log files in place. What does S3 not do here, and what would you use?
+        referenceAnswer: |
+          S3 general purpose buckets are object storage accessed through APIs: no POSIX semantics, no file locking,
+          and no in-place edits or appends (an object is replaced as a whole; "folders" are key prefixes). For a
+          shared POSIX file system, use Amazon EFS (or FSx).
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'S3 is object storage, not a POSIX file system',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Objects are replaced whole; no in-place edits or appends',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Suggests EFS or FSx for a shared file system',
+                weight: 2,
+                critical: false,
+              }
+          knownMisconceptions:
+            - slug: s3-eventual-consistency
+              statement: S3 is only eventually consistent for overwrites and deletes.
+              correction: S3 provides strong read-after-write consistency for PUTs and DELETEs.
+
+  - slug: storage-classes
+    title: Storage classes
+    summary: Classes trade retrieval speed and cost against storage price, from S3 Standard to Glacier Deep Archive.
+    explanation: |
+      - **S3 Standard**: frequently accessed data, multi-AZ.
+      - **S3 Intelligent-Tiering**: moves objects between access tiers automatically for unknown or changing patterns.
+      - **S3 Standard-IA** and **S3 One Zone-IA**: infrequently accessed data with a retrieval fee; One Zone-IA keeps
+        data in a single AZ.
+      - **S3 Glacier Instant Retrieval**, **Glacier Flexible Retrieval**, and **Glacier Deep Archive**: archive
+        classes with lower storage prices and longer retrieval times (milliseconds, minutes to hours, and hours).
+      Infrequent-access and archive classes have **minimum storage durations** (for example 30 days for Standard-IA,
+      90 for Glacier Flexible Retrieval, 180 for Deep Archive).
+    examples: |
+      Compliance archives kept for 7 years and rarely read fit Glacier Deep Archive; recreatable thumbnails fit One Zone-IA.
+    limitations: |
+      Moving short-lived objects into IA or archive classes can cost more because of minimum durations and retrieval fees.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D4 }
+    citations:
+      - source: s3-storage-classes
+        excerpt: S3 offers storage classes for frequently accessed, infrequently accessed, and archived data, including S3 Standard, S3 Intelligent-Tiering, S3 Standard-IA, S3 One Zone-IA, and the S3 Glacier storage classes.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: choose-class
+        dimension: when
+        difficulty: 2
+        prompt: Choose an S3 storage class for (a) data with unpredictable access, (b) recreatable thumbnails read monthly, and (c) a 7-year compliance archive read almost never. Justify each.
+        referenceAnswer: |
+          (a) S3 Intelligent-Tiering, which moves objects between tiers automatically as access changes. (b) S3 One
+          Zone-IA: infrequent access, lower cost, and single-AZ risk is acceptable because the data can be recreated.
+          (c) S3 Glacier Deep Archive: the lowest storage cost, with retrieval in hours acceptable for rare access.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: '(a) Intelligent-Tiering', weight: 2, critical: true }
+            - {
+                id: p2,
+                text: '(b) One Zone-IA (or Standard-IA) with justification',
+                weight: 2,
+                critical: false,
+              }
+            - { id: p3, text: '(c) Glacier Deep Archive', weight: 2, critical: true }
+            - {
+                id: p4,
+                text: 'Mentions retrieval time or minimum duration trade-offs',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: versioning-and-lifecycle
+    title: Versioning and lifecycle rules
+    summary: Versioning keeps every version of an object to recover from overwrites and deletes; lifecycle rules transition or expire objects automatically.
+    explanation: |
+      With **versioning** enabled, overwrites create new versions and deletes add a **delete marker** instead of
+      removing data, so earlier versions can be restored. Once enabled, versioning can be suspended but not
+      disabled. **Lifecycle rules** transition objects (or noncurrent versions) to cheaper storage classes after a
+      number of days and expire them later. Versioning is also required for replication.
+    examples: |
+      Keep current versions in Standard, move noncurrent versions to Glacier Flexible Retrieval after 30 days, and
+      expire them after 365 days.
+    limitations: |
+      Versioning stores every version, so without lifecycle rules for noncurrent versions, storage costs grow.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D4 }
+    citations:
+      - source: s3-versioning
+        excerpt: Versioning keeps multiple variants of an object in the same bucket so you can recover from unintended overwrites and deletions; deleting an object in a versioned bucket inserts a delete marker.
+        excerptKind: paraphrase
+        supports: defines
+      - source: s3-lifecycle
+        excerpt: Lifecycle configurations define transition actions that move objects to other storage classes and expiration actions that delete objects after a defined period.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: recover-deleted-object
+        dimension: solution
+        difficulty: 2
+        prompt: An important object was deleted from a versioned bucket. What actually happened, how do you recover it, and how do you keep version costs under control?
+        referenceAnswer: |
+          In a versioned bucket a simple delete adds a delete marker; earlier versions remain. Delete the delete
+          marker (or copy the previous version back) to restore it. Control cost with lifecycle rules that
+          transition and eventually expire noncurrent versions.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'A delete marker was added; prior versions still exist',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Recover by removing the delete marker or restoring a prior version',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Lifecycle rules for noncurrent versions control cost',
+                weight: 2,
+                critical: false,
+              }
+
+  - slug: access-control
+    title: Access control and Block Public Access
+    summary: Combine IAM policies, bucket policies, and Block Public Access; encryption at rest is on by default for new objects.
+    explanation: |
+      Access to S3 is decided by IAM identity policies and **bucket policies** (resource-based), evaluated with the
+      usual IAM logic. **S3 Block Public Access** settings at the account and bucket level override policies or ACLs
+      that would grant public access; new buckets have it enabled by default. ACLs are disabled by default through
+      the bucket-owner-enforced Object Ownership setting. New objects are encrypted at rest with SSE-S3 by default,
+      and SSE-KMS adds key-level control and audit.
+    examples: |
+      Serve a static site privately through CloudFront with origin access control, keeping Block Public Access on.
+    limitations: |
+      A bucket policy cannot override an explicit deny elsewhere, and Block Public Access wins over any public grant.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: s3-block-public-access
+        excerpt: S3 Block Public Access settings override bucket policies and object permissions that would allow public access, and can be applied at the account and bucket level.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: private-static-site
+        dimension: where
+        difficulty: 2
+        prompt: How would you serve a static website from S3 to the public without making the bucket public?
+        referenceAnswer: |
+          Keep S3 Block Public Access enabled and put Amazon CloudFront in front of the bucket. Use origin access
+          control (OAC) so that only the CloudFront distribution can read the objects, granted through a bucket policy
+          that allows the CloudFront service principal for that distribution.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Keep Block Public Access on / bucket stays private',
+                weight: 2,
+                critical: true,
+              }
+            - { id: p2, text: 'Serve through CloudFront', weight: 2, critical: true }
+            - {
+                id: p3,
+                text: 'Origin access control plus a bucket policy allowing only CloudFront',
+                weight: 2,
+                critical: true,
+              }
+
+  - slug: performance-and-transfer
+    title: Performance and transfer
+    summary: S3 scales request rates per prefix, and multipart upload, byte-range fetches, and Transfer Acceleration speed up transfers.
+    explanation: |
+      S3 supports at least **3,500 PUT/COPY/POST/DELETE** and **5,500 GET/HEAD** requests per second **per prefix**,
+      and you can scale further by spreading keys across prefixes. Use **multipart upload** and parallel
+      **byte-range fetches** for large objects. **S3 Transfer Acceleration** routes uploads through CloudFront edge
+      locations to speed up long-distance transfers.
+    examples: |
+      Users worldwide upload large files to a bucket in one Region using Transfer Acceleration and multipart upload.
+    limitations: |
+      Transfer Acceleration has an extra per-GB charge and helps mostly over long distances.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+    citations:
+      - source: s3-performance
+        excerpt: Applications can achieve at least 3,500 PUT/COPY/POST/DELETE or 5,500 GET/HEAD requests per second per partitioned prefix, and performance scales by using multiple prefixes.
+        excerptKind: paraphrase
+        supports: evidence
+    questions:
+      - key: global-uploads
+        dimension: solution
+        difficulty: 2
+        prompt: Users on other continents upload multi-gigabyte files to a single S3 bucket and see slow, failing uploads. What two features would you apply?
+        referenceAnswer: |
+          Multipart upload, so large files are split into parts uploaded in parallel and failed parts can be retried
+          individually; and S3 Transfer Acceleration, which routes uploads through nearby CloudFront edge locations
+          over the AWS network to the bucket's Region.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Multipart upload with parallel, retryable parts',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'S3 Transfer Acceleration via edge locations',
+                weight: 3,
+                critical: true,
+              }

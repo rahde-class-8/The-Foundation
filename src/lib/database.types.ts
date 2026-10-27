@@ -29,7 +29,14 @@ export type Database = {
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            catalog_facets: { Args: never; Returns: Json }
+            import_catalog: { Args: { p_catalog: Json; p_owner_id: string }; Returns: Json }
+            mark_concept_exposed: { Args: { concept_id: string }; Returns: undefined }
+            search_catalog: {
+              Args: { after?: string; category_id?: string; domain_id?: string; page_size?: number; q?: string }
+              Returns: Json
+            }
+            service_profile: { Args: { provider?: string; service_slug: string }; Returns: Json }
           }
           Enums: {
             [_ in never]: never

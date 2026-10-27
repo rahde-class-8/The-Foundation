@@ -1,0 +1,294 @@
+slug: sqs
+name: Amazon Simple Queue Service
+aliases: [SQS]
+category: application-integration
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html
+summary: Fully managed message queues that decouple producers from consumers and buffer work until it is processed.
+
+dimensions:
+  what: |
+    A managed message queue: producers send messages, the queue stores them durably, and consumers **poll**, process,
+    and delete them.
+  how: |
+    A received message becomes invisible for the **visibility timeout**. If the consumer deletes it in time, it is
+    gone; otherwise it becomes visible again for another attempt. After too many receives, a redrive policy moves it
+    to a **dead-letter queue**. Messages are retained for a configurable period (default 4 days, up to 14 days).
+  problem: |
+    Tightly coupled services fail together and cannot absorb traffic spikes; a slow consumer blocks its producer.
+  solution: |
+    A durable buffer between components: producers keep writing during spikes or consumer outages, and consumers
+    scale independently and process at their own pace.
+  not_do: |
+    - It does not push messages to consumers; consumers (or Lambda's event source mapping) poll.
+    - It does not deliver one message to many independent consumers; use SNS or EventBridge for fan-out.
+    - Standard queues do not guarantee ordering or exactly-once delivery; use FIFO queues when you need them.
+  when: |
+    Decoupling services, buffering bursts (load leveling), distributing work across workers, and making processing
+    retryable.
+  where: |
+    Between a front end and back-end workers, between microservices, and behind SNS topics in fan-out designs; a
+    common Lambda event source.
+  trade_offs: |
+    Resilience and independent scaling, in exchange for asynchronous processing (latency, no immediate result to the
+    caller) and the need for idempotent consumers because messages may be delivered more than once.
+
+related:
+  - {
+      service: sns,
+      relation: often_confused_with,
+      note: 'SNS pushes to many subscribers; SQS stores messages for pollers.',
+    }
+  - {
+      service: lambda,
+      relation: commonly_paired_with,
+      note: 'Lambda polls SQS through an event source mapping.',
+    }
+
+concepts:
+  - slug: queue-types
+    title: Standard vs FIFO queues
+    summary: Standard queues offer very high throughput with at-least-once delivery and best-effort ordering; FIFO queues guarantee order and exactly-once processing.
+    explanation: |
+      - **Standard queue**: nearly unlimited throughput, **at-least-once** delivery (occasional duplicates), and
+        **best-effort** ordering.
+      - **FIFO queue** (name ends in `.fifo`): **first-in, first-out** order within a **message group**, and
+        **exactly-once processing** through deduplication, with lower throughput limits than standard queues.
+    examples: |
+      Order events for the same account must be processed in sequence: use a FIFO queue with `MessageGroupId` set to
+      the account ID, so different accounts still process in parallel.
+    limitations: |
+      You cannot convert a standard queue to FIFO; create a new FIFO queue.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: sqs-queue-types
+        excerpt: Standard queues support a nearly unlimited number of transactions per second with at-least-once delivery and best-effort ordering, while FIFO queues preserve the order of messages and provide exactly-once processing.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: standard-or-fifo
+        dimension: trade_offs
+        difficulty: 2
+        prompt: Compare SQS standard and FIFO queues on ordering, delivery guarantees, and throughput. When must you use FIFO?
+        referenceAnswer: |
+          Standard: best-effort ordering, at-least-once delivery (duplicates possible), nearly unlimited throughput.
+          FIFO: strict order within a message group and exactly-once processing (deduplication), with lower
+          throughput. Use FIFO when processing order matters or duplicates are unacceptable and cannot be handled
+          idempotently.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Standard: at-least-once, best-effort ordering, very high throughput',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'FIFO: strict ordering (per message group) and exactly-once processing',
+                weight: 3,
+                critical: true,
+              }
+            - { id: p3, text: 'FIFO has lower throughput', weight: 1, critical: false }
+
+  - slug: visibility-timeout
+    title: Visibility timeout
+    summary: A received message is hidden for the visibility timeout; if it is not deleted in time it reappears and may be processed again.
+    explanation: |
+      When a consumer receives a message, SQS hides it for the **visibility timeout** (default **30 seconds**, up to
+      **12 hours**). The consumer must delete the message before the timeout ends. If processing takes longer, the
+      message becomes visible again and another consumer may process it, so set the timeout longer than the expected
+      processing time (or extend it with `ChangeMessageVisibility`).
+    examples: |
+      Video jobs take 5 minutes but the timeout is 30 seconds: other workers keep picking up the same job, wasting work.
+    limitations: |
+      Visibility timeout does not stop duplicates entirely; consumers should be idempotent.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: sqs-visibility-timeout
+        excerpt: After a consumer receives a message, SQS prevents other consumers from receiving it for the visibility timeout, which defaults to 30 seconds and can be set up to 12 hours; if the message is not deleted before the timeout expires, it becomes visible again.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: duplicate-processing
+        dimension: how
+        difficulty: 2
+        prompt: Workers take about 5 minutes per message, and messages keep being processed more than once. Explain the cause and the fix.
+        referenceAnswer: |
+          The visibility timeout (default 30 seconds) is shorter than the processing time, so each message becomes
+          visible again before the worker deletes it and other workers receive it. Increase the visibility timeout
+          above the processing time (or extend it with ChangeMessageVisibility while working), and make processing
+          idempotent.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Visibility timeout is shorter than processing time',
+                weight: 3,
+                critical: true,
+              }
+            - { id: p2, text: 'Message reappears and is received again', weight: 2, critical: true }
+            - { id: p3, text: 'Increase/extend the visibility timeout', weight: 2, critical: true }
+            - { id: p4, text: 'Make consumers idempotent', weight: 1, critical: false }
+
+  - slug: long-polling
+    title: Short vs long polling
+    summary: Long polling waits up to 20 seconds for messages, reducing empty responses and cost compared with short polling.
+    explanation: |
+      With **short polling**, `ReceiveMessage` queries a subset of servers and returns immediately, often empty.
+      With **long polling** (`WaitTimeSeconds` of 1–20 seconds, or the queue's receive wait time), SQS waits until a
+      message arrives or the wait time ends, and queries all servers. Long polling reduces empty responses, API
+      calls, and cost.
+    examples: |
+      A worker loop that receives mostly empty responses every 100 ms is switched to a 20-second long poll.
+    limitations: |
+      Long polling does not change delivery semantics; it only affects how receive requests wait.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D4 }
+    citations:
+      - source: sqs-long-polling
+        excerpt: Long polling reduces empty responses by letting SQS wait, up to 20 seconds, for a message to become available before responding, and it queries all servers rather than a subset.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: reduce-empty-receives
+        dimension: solution
+        difficulty: 1
+        prompt: Consumers make many ReceiveMessage calls that return no messages, and costs are rising. What should you change?
+        referenceAnswer: |
+          Enable long polling by setting WaitTimeSeconds (up to 20 seconds) on the receive calls or the queue's
+          receive message wait time. SQS then waits for messages instead of returning empty responses immediately,
+          reducing the number of API calls and cost.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Enable long polling (WaitTimeSeconds / receive wait time)',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Waits up to 20 seconds, reducing empty responses and requests',
+                weight: 2,
+                critical: true,
+              }
+
+  - slug: dead-letter-queues
+    title: Dead-letter queues
+    summary: A redrive policy moves messages that fail too many times to a dead-letter queue for inspection and redrive.
+    explanation: |
+      A **dead-letter queue (DLQ)** is a separate queue named in the source queue's **redrive policy** with a
+      **maxReceiveCount**. When a message has been received that many times without being deleted, SQS moves it to
+      the DLQ, so a "poison" message stops blocking or wasting consumers. After fixing the problem you can **redrive**
+      messages back to the source queue.
+    examples: |
+      A malformed order message fails parsing every time; after 5 receives it moves to the DLQ and an alarm on the
+      DLQ depth notifies the team.
+    limitations: |
+      The DLQ must be the same type as the source (a FIFO queue's DLQ must be FIFO), and set its retention longer than
+      the source queue's so messages do not expire first.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: sqs-dead-letter-queues
+        excerpt: A dead-letter queue receives messages from a source queue after the maximum number of receives in the redrive policy is exceeded, and the dead-letter queue of a FIFO queue must also be a FIFO queue.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: poison-messages
+        dimension: solution
+        difficulty: 2
+        prompt: A few malformed messages fail processing repeatedly and keep consuming worker time. How do you isolate them with SQS?
+        referenceAnswer: |
+          Configure a dead-letter queue with a redrive policy on the source queue and a maxReceiveCount (for example
+          5). Messages received that many times without deletion move to the DLQ, where you can alarm on depth,
+          inspect them, and redrive them after a fix. The DLQ must be the same queue type and should retain messages
+          longer than the source.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Use a dead-letter queue via a redrive policy',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'maxReceiveCount decides when messages move',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Monitor/inspect and redrive after fixing',
+                weight: 1,
+                critical: false,
+              }
+            - {
+                id: p4,
+                text: 'DLQ must match queue type; longer retention',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: decoupling-and-buffering
+    title: Decoupling and load leveling
+    summary: A queue absorbs bursts so producers are not throttled by slow consumers, and lets workers scale on queue depth.
+    explanation: |
+      Placing SQS between a producer and a consumer means the producer only needs the queue to be available. During a
+      traffic spike, messages accumulate and workers drain them at a sustainable rate (**load leveling**). Consumers
+      can scale on the `ApproximateNumberOfMessagesVisible` metric (for example an Auto Scaling group with a
+      target-tracking policy on backlog per instance).
+    examples: |
+      A flash sale sends 50,000 orders in a minute; the web tier writes them to SQS and a worker fleet processes them
+      over the next few minutes without dropping orders.
+    limitations: |
+      The producer does not get an immediate processing result; design for asynchronous status (for example polling or
+      notifications).
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: sqs-what-is
+        excerpt: Amazon SQS offers a secure, durable, and available hosted queue that lets you integrate and decouple distributed software systems and components.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: absorb-spikes
+        dimension: problem
+        difficulty: 1
+        prompt: An order service overloads its database during traffic spikes and drops requests. How does putting SQS in front of the processors help, and what do you give up?
+        referenceAnswer: |
+          The web tier writes orders to an SQS queue instead of calling the processors directly. The queue durably
+          buffers the spike, and processors consume at a rate the database can handle, scaling on queue depth, so
+          orders are not dropped. You give up synchronous processing: the client no longer gets an immediate result.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'The queue buffers bursts durably (load leveling)',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Producers and consumers are decoupled and scale independently',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Trade-off: asynchronous, no immediate result',
+                weight: 1,
+                critical: false,
+              }

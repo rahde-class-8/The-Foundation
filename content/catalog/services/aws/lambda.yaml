@@ -1,0 +1,402 @@
+slug: lambda
+name: AWS Lambda
+aliases: [Lambda]
+category: compute
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
+summary: Event-driven, serverless compute that runs your code in managed execution environments and bills per request and duration.
+
+dimensions:
+  what: |
+    A serverless compute service that runs functions (your code plus a runtime) in response to events or direct calls,
+    without you provisioning or managing servers.
+  how: |
+    Each invocation runs in an isolated **execution environment**. Lambda creates environments on demand (a *cold start*),
+    may reuse a warm environment for later invocations, and scales out by adding environments: one environment
+    handles one request at a time, so concurrency equals the number of in-flight requests.
+  problem: |
+    Running code for intermittent or spiky workloads without paying for idle servers or operating fleets
+    (patching, capacity planning, scaling).
+  solution: |
+    AWS manages the hosts, runtime patching, and scaling; you pay per request and per GB-second of execution.
+    Event sources (S3, SNS, EventBridge, SQS, API Gateway, and more) trigger functions directly.
+  not_do: |
+    - It does not run long jobs: a single invocation is capped at **15 minutes**.
+    - It does not keep state between invocations; any reuse of memory or `/tmp` is an optimization, not a guarantee.
+    - It is not a place for always-on servers, persistent connections you control, or workloads needing OS-level access.
+  when: |
+    Short, event-driven, or spiky workloads: API backends, file processing on S3 upload, stream and queue consumers,
+    scheduled tasks, and glue between AWS services.
+  where: |
+    In the compute layer behind **API Gateway** or an **Application Load Balancer**, or as a consumer of events from
+    S3, SNS, EventBridge, SQS, Kinesis, or DynamoDB Streams. Often orchestrated by **Step Functions** for multi-step work.
+  trade_offs: |
+    No servers to manage and fine-grained billing, in exchange for cold-start latency, a duration cap, concurrency
+    quotas, limited control of the runtime environment, and higher cost than EC2 or containers at constant high load.
+
+related:
+  - {
+      service: ec2,
+      relation: alternative_to,
+      note: 'Use EC2 (or containers) for long-running, always-on, or OS-level workloads.',
+    }
+  - {
+      service: sqs,
+      relation: commonly_paired_with,
+      note: 'Lambda polls SQS through an event source mapping to process messages in batches.',
+    }
+  - {
+      service: sns,
+      relation: commonly_paired_with,
+      note: 'SNS invokes Lambda asynchronously for each published message.',
+    }
+  - { service: iam, relation: prerequisite_for, note: 'Every function needs an execution role.' }
+
+concepts:
+  - slug: invocation-models
+    title: Invocation models
+    summary: Functions are invoked synchronously, asynchronously, or by an event source mapping that polls a stream or queue.
+    explanation: |
+      - **Synchronous**: the caller waits for the result (for example API Gateway, an Application Load Balancer, or an SDK
+        call with `RequestResponse`). Errors go back to the caller, which decides whether to retry.
+      - **Asynchronous**: Lambda queues the event and returns immediately (for example S3 notifications, SNS, EventBridge).
+        Lambda retries failed asynchronous invocations (twice by default) and can send failures to a dead-letter queue
+        or an on-failure destination.
+      - **Event source mapping**: Lambda itself polls a source such as SQS, Kinesis, or DynamoDB Streams and invokes the
+        function with batches of records.
+    examples: |
+      - An S3 upload triggers a thumbnail function asynchronously.
+      - An SQS queue feeds an order processor through an event source mapping with a batch size of 10.
+    limitations: |
+      Retry behavior depends on the model: synchronous callers own their retries; stream sources retry a failing batch
+      until it succeeds or the records expire unless you configure error handling.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: lambda-invocation
+        excerpt: Lambda functions can be invoked synchronously, where the caller waits for a response, or asynchronously, where Lambda queues the event and returns immediately; event source mappings let Lambda read from streams and queues and invoke the function with batches.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: compare-invocation-models
+        dimension: how
+        difficulty: 2
+        prompt: Describe Lambda's three invocation models and give one AWS event source that uses each.
+        referenceAnswer: |
+          Synchronous: the caller waits for the response and handles retries (API Gateway, ALB, SDK RequestResponse).
+          Asynchronous: Lambda queues the event, returns immediately, and retries failures itself, with optional
+          DLQ or on-failure destination (S3 notifications, SNS, EventBridge). Event source mapping: Lambda polls a
+          queue or stream and invokes the function with batches (SQS, Kinesis, DynamoDB Streams).
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Synchronous: the caller waits for the result and owns retries',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Asynchronous: Lambda queues the event and retries failed invocations itself',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Event source mapping: Lambda polls a queue or stream and invokes with batches',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p4,
+                text: 'A correct example source for each model',
+                weight: 1,
+                critical: false,
+              }
+          knownMisconceptions:
+            - slug: sqs-pushes-to-lambda
+              statement: SQS pushes messages to Lambda.
+              correction: Lambda polls SQS through an event source mapping; SQS never pushes.
+
+  - slug: execution-limits
+    title: Execution time, memory, and storage limits
+    summary: An invocation runs for at most 15 minutes, with 128 MB–10,240 MB of memory and configurable ephemeral storage.
+    explanation: |
+      The function **timeout** is configurable up to **900 seconds (15 minutes)**; the default is 3 seconds. Memory is
+      configurable from **128 MB to 10,240 MB**, and CPU is allocated in proportion to memory, so raising memory can
+      make CPU-bound functions faster. Each environment has ephemeral `/tmp` storage of 512 MB by default, configurable
+      up to 10,240 MB.
+    examples: |
+      A video transcode that takes 40 minutes does not fit in a single invocation: split it into chunks orchestrated by
+      Step Functions, or run it on ECS/Fargate, EC2, or AWS Batch.
+    limitations: |
+      Increasing memory does not raise the 15-minute cap. Deployment package and payload sizes are also capped; check
+      the current quotas page before relying on a specific number.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+      - { certification: aws/SAA/C03, domain: D4, relevance: supporting }
+    citations:
+      - source: lambda-quotas
+        section: Function configuration, deployment, and execution
+        excerpt: The function timeout can be set up to 900 seconds (15 minutes); memory can be configured between 128 MB and 10,240 MB; ephemeral /tmp storage is configurable between 512 MB and 10,240 MB.
+        excerptKind: paraphrase
+        supports: limitation
+    questions:
+      - key: long-running-job
+        dimension: not_do
+        difficulty: 2
+        prompt: A batch job needs about 40 minutes of continuous processing. Why is a single Lambda invocation the wrong fit, and what are two alternatives?
+        referenceAnswer: |
+          A Lambda invocation can run for at most 15 minutes (900 seconds), and adding memory does not change that.
+          Alternatives: split the work into steps orchestrated by Step Functions, or run it as a container on
+          ECS/Fargate, on EC2, or with AWS Batch.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Maximum invocation duration is 15 minutes (900 seconds)',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'At least one valid alternative: Step Functions orchestration, ECS/Fargate, EC2, or AWS Batch',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'More memory raises CPU but not the time limit',
+                weight: 1,
+                critical: false,
+              }
+          knownMisconceptions:
+            - slug: lambda-memory-extends-timeout
+              statement: Allocating more memory lets a Lambda function run longer.
+              correction: Memory changes CPU allocation and cost, not the 15-minute maximum.
+
+  - slug: concurrency
+    title: Concurrency and scaling
+    summary: Each concurrent request needs its own execution environment; account and function concurrency limits cap scaling.
+    explanation: |
+      Concurrency is the number of requests a function is serving at the same moment. Lambda scales by creating more
+      execution environments, up to the account's concurrency quota for the Region (1,000 by default, increasable).
+      **Reserved concurrency** guarantees and caps capacity for one function. **Provisioned concurrency**
+      pre-initializes environments to remove cold starts, at an additional cost.
+    examples: |
+      Reserve concurrency for a payment function so a burst in another function cannot starve it, and cap a function
+      that writes to a small relational database so it cannot exhaust connections.
+    limitations: |
+      Requests beyond available concurrency are throttled. Synchronous callers receive a throttling error; asynchronous
+      events are retried by Lambda.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+      - { certification: aws/SAA/C03, domain: D2, relevance: supporting }
+    citations:
+      - source: lambda-concurrency
+        excerpt: Concurrency is the number of in-flight requests a function handles at the same time; each concurrent request uses a separate execution environment, and scaling is bounded by the account's Regional concurrency quota.
+        excerptKind: paraphrase
+        supports: defines
+      - source: lambda-concurrency
+        excerpt: Reserved concurrency sets both the maximum and a guaranteed amount of concurrency for a function, while provisioned concurrency keeps a number of environments initialized to avoid cold-start latency.
+        excerptKind: paraphrase
+        supports: evidence
+    questions:
+      - key: reserved-vs-provisioned
+        dimension: solution
+        difficulty: 2
+        prompt: Explain the difference between reserved concurrency and provisioned concurrency, and when you would use each.
+        referenceAnswer: |
+          Reserved concurrency carves out part of the account's concurrency for one function: it guarantees that
+          capacity and also caps the function at it (useful to protect critical functions or limit load on a
+          downstream database). Provisioned concurrency keeps a set number of environments initialized so requests do
+          not suffer cold starts (useful for latency-sensitive APIs); it costs extra.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Reserved concurrency guarantees and caps concurrency for a function',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Provisioned concurrency pre-initializes environments to avoid cold starts',
+                weight: 2,
+                critical: true,
+              }
+            - { id: p3, text: 'A sensible use case for each', weight: 1, critical: false }
+            - {
+                id: p4,
+                text: 'Provisioned concurrency has an additional cost',
+                weight: 1,
+                critical: false,
+              }
+          knownMisconceptions:
+            - slug: reserved-removes-cold-starts
+              statement: Reserved concurrency eliminates cold starts.
+              correction: Reserved concurrency only allocates capacity; provisioned concurrency is what keeps environments warm.
+
+  - slug: permissions
+    title: Execution role and resource-based policy
+    summary: The execution role controls what the function can do; the resource-based policy controls who can invoke it.
+    explanation: |
+      A function's **execution role** is an IAM role that Lambda assumes when it runs; its policies decide which AWS
+      APIs the code can call (for example writing logs to CloudWatch or reading from DynamoDB). Separately, a
+      **resource-based policy** on the function grants other principals or services (such as S3, SNS, or another
+      account) permission to invoke it.
+    examples: |
+      An S3-triggered function needs `s3:GetObject` in its execution role to read the uploaded file, and a
+      resource-based policy statement allowing the S3 service to invoke it.
+    limitations: |
+      Never embed long-term access keys in function code or environment variables; the execution role already
+      provides temporary credentials.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: lambda-execution-role
+        excerpt: A Lambda function's execution role is an IAM role that grants the function permission to access AWS services and resources; Lambda assumes the role when the function is invoked.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: two-policy-types
+        dimension: how
+        difficulty: 2
+        prompt: An S3 upload should trigger a Lambda function that writes a record to DynamoDB. Which two kinds of permissions are involved, and what does each allow?
+        referenceAnswer: |
+          The function's execution role (an IAM role Lambda assumes) must allow the DynamoDB write (and reading the S3
+          object if needed, plus CloudWatch Logs). The function's resource-based policy must allow Amazon S3 to invoke
+          the function.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Execution role grants the function access to DynamoDB (and S3/logs as needed)',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Resource-based policy on the function allows S3 to invoke it',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Credentials come from the role; no access keys in code',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: vpc-networking
+    title: VPC networking
+    summary: Functions attached to a VPC reach private resources through ENIs in your subnets and need a NAT gateway for internet access.
+    explanation: |
+      By default a function runs in a Lambda-managed network with internet access but no access to resources in your
+      private subnets. Attaching it to a **VPC** (subnets plus security groups) lets it reach private resources such
+      as an RDS database, using elastic network interfaces in those subnets. A VPC-attached function has no public IP,
+      so reaching the internet requires a route through a **NAT gateway**; AWS services can also be reached through
+      VPC endpoints.
+    examples: |
+      A function that queries RDS in private subnets and also calls a third-party API needs both VPC attachment and a
+      NAT gateway (or the API reached another way).
+    limitations: |
+      Placing a VPC-attached function in a public subnet does not give it internet access.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+      - { certification: aws/SAA/C03, domain: D2, relevance: supporting }
+    citations:
+      - source: lambda-vpc
+        excerpt: Connecting a function to a VPC lets it access resources in private subnets through network interfaces in those subnets; internet access from a VPC-connected function requires a NAT gateway, because the function does not receive a public IP address.
+        excerptKind: paraphrase
+        supports: limitation
+    questions:
+      - key: vpc-internet-access
+        dimension: where
+        difficulty: 2
+        prompt: A VPC-attached Lambda function can reach RDS but times out calling a public HTTPS API. Explain why and how to fix it.
+        referenceAnswer: |
+          A VPC-attached function uses network interfaces in your subnets and has no public IP address, so it cannot
+          reach the internet directly, even from a public subnet. Route its subnets' outbound traffic through a NAT
+          gateway (in a public subnet with an internet gateway), or use VPC endpoints for AWS service calls.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'VPC-attached functions have no public IP / no direct internet access',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Fix: route outbound traffic through a NAT gateway',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'A public subnet alone does not help; VPC endpoints serve AWS APIs',
+                weight: 1,
+                critical: false,
+              }
+          knownMisconceptions:
+            - slug: lambda-public-subnet-internet
+              statement: Putting a Lambda function in a public subnet gives it internet access.
+              correction: Lambda ENIs never get public IPs; outbound internet access needs a NAT gateway.
+
+  - slug: statelessness
+    title: Stateless execution
+    summary: Execution environments may be reused or discarded at any time, so durable state belongs in external services.
+    explanation: |
+      Lambda can freeze and reuse an execution environment for later invocations, which is why initializing SDK clients
+      outside the handler improves performance. But Lambda may also create new environments or discard old ones at any
+      time, so in-memory data and `/tmp` contents are not durable. Keep state in services such as DynamoDB, S3, or
+      ElastiCache.
+    examples: |
+      A shopping-cart function stores the cart in DynamoDB rather than in a module-level variable.
+    limitations: |
+      Caching in the execution environment is safe only for data you can lose or rebuild.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: lambda-execution-environment
+        excerpt: Lambda may reuse an execution environment for subsequent invocations, but it can also terminate environments at any time, so functions should not rely on local state persisting between invocations.
+        excerptKind: paraphrase
+        supports: limitation
+    questions:
+      - key: where-to-keep-state
+        dimension: trade_offs
+        difficulty: 1
+        prompt: Why should a Lambda function not keep user session data in a global variable, and where should it go instead?
+        referenceAnswer: |
+          Environments may be reused, but Lambda can create new ones or discard existing ones at any time, and
+          concurrent requests run in different environments, so a global variable is neither durable nor shared.
+          Store session data in an external service such as DynamoDB or ElastiCache (or S3 for objects).
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Environments can be discarded or created at any time; local state is not durable',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Concurrent requests run in separate environments, so state is not shared',
+                weight: 1,
+                critical: false,
+              }
+            - {
+                id: p3,
+                text: 'Store state externally (DynamoDB, ElastiCache, S3)',
+                weight: 2,
+                critical: true,
+              }

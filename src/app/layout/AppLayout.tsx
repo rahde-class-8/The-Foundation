@@ -25,7 +25,7 @@ export function AppLayout() {
       </a>
       <header className="border-b">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <span className="font-semibold">Muscle Memory</span>
+          <span className="font-semibold">The Foundation</span>
           <nav
             aria-label="Main"
             className="order-last w-full overflow-x-auto sm:order-none sm:w-auto"

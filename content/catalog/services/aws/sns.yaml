@@ -1,0 +1,283 @@
+slug: sns
+name: Amazon Simple Notification Service
+aliases: [SNS]
+category: application-integration
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/sns/latest/dg/welcome.html
+summary: Managed publish/subscribe messaging that pushes each message to every subscriber of a topic.
+
+dimensions:
+  what: |
+    A pub/sub service: publishers send messages to a **topic**, and SNS **pushes** a copy to every **subscription**:
+    SQS queues, Lambda functions, HTTP(S) endpoints, Amazon Data Firehose, email, SMS, and mobile push.
+  how: |
+    Subscribers register with the topic (HTTP and email endpoints must confirm). On publish, SNS delivers to each
+    subscription, applying subscription **filter policies**, retrying failed deliveries according to the delivery
+    policy, and optionally sending undeliverable messages to a subscription's dead-letter queue.
+  problem: |
+    A producer that must notify many independent consumers would otherwise call each one, coupling it to all of them.
+  solution: |
+    Publish once; SNS fans the message out to any number of subscribers, which can be added or removed without
+    changing the publisher.
+  not_do: |
+    - It is not a queue: subscribers cannot poll a topic for messages later (put an SQS queue behind it to buffer).
+    - It does not guarantee ordering or deduplication on standard topics (use FIFO topics).
+    - It does not process or transform messages; subscribers do.
+  when: |
+    Fan-out of events to multiple systems, application and operational alerts, and mobile or SMS notifications.
+  where: |
+    At the event-publishing edge of an architecture, in front of multiple SQS queues or Lambda functions (fan-out),
+    and as the target of CloudWatch alarms.
+  trade_offs: |
+    Simple, scalable fan-out with push delivery, in exchange for no built-in buffering for slow consumers (pair with
+    SQS) and limited routing logic compared with EventBridge rules.
+
+related:
+  - {
+      service: sqs,
+      relation: commonly_paired_with,
+      note: 'SNS-to-SQS fan-out gives each consumer its own durable buffer.',
+    }
+  - {
+      service: lambda,
+      relation: commonly_paired_with,
+      note: 'SNS invokes Lambda subscribers asynchronously.',
+    }
+
+concepts:
+  - slug: pub-sub-push
+    title: Topics, subscriptions, and push delivery
+    summary: Publishers send to a topic and SNS pushes a copy to every subscription; there is nothing to poll.
+    explanation: |
+      A **topic** is the publishing endpoint. Each **subscription** names a protocol and endpoint (SQS, Lambda,
+      HTTP/S, Firehose, email, SMS, mobile push). SNS pushes each published message to every subscription, in
+      parallel. Publishers do not know who the subscribers are, so consumers can be added without changing producers.
+    examples: |
+      An `order-placed` topic notifies the billing service (Lambda), the warehouse (SQS), and an email list for
+      high-value orders.
+    limitations: |
+      If a subscriber endpoint is down, delivery depends on retries; SNS does not keep messages for later polling on
+      standard topics.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: sns-what-is
+        excerpt: Amazon SNS is a managed service that delivers messages from publishers to subscribers through topics, supporting endpoints such as SQS, Lambda, HTTP/S, Firehose, email, SMS, and mobile push.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: sns-vs-sqs
+        dimension: what
+        difficulty: 1
+        prompt: Explain the fundamental difference between how SNS and SQS deliver messages to consumers.
+        referenceAnswer: |
+          SNS is publish/subscribe and push-based: a message published to a topic is pushed to every subscriber. SQS
+          is a queue and pull-based: messages are stored until a consumer polls, receives, and deletes them, and each
+          message is processed by one consumer.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'SNS pushes each message to all subscribers (pub/sub)',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'SQS stores messages until consumers poll (pull)',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'SQS messages are consumed by one consumer',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: fan-out
+    title: SNS-to-SQS fan-out
+    summary: Subscribing several SQS queues to one topic gives each consumer its own durable, independently processed copy.
+    explanation: |
+      In the **fan-out** pattern, a topic has multiple SQS queue subscriptions. Each queue receives every message
+      and its consumers process at their own pace, with their own retries and dead-letter queue. The queue access
+      policy must allow the topic to send messages (`sqs:SendMessage` with the topic as source).
+    examples: |
+      An image upload event fans out to a thumbnail queue, a moderation queue, and an analytics queue.
+    limitations: |
+      Encrypted queues need a KMS key policy that allows SNS to use the key.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: sns-fanout
+        excerpt: When you subscribe SQS queues to an SNS topic, each message published to the topic is delivered to every subscribed queue, letting multiple systems process the same message independently.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: design-fan-out
+        dimension: where
+        difficulty: 2
+        prompt: Three independent services must each process every order event, at their own pace and without losing events if one is down. Design this with SNS and SQS.
+        referenceAnswer: |
+          Publish order events to an SNS topic and subscribe one SQS queue per service. Each queue receives every
+          message and buffers it durably, so a service that is down catches up later; each service has its own
+          consumers, retries, and DLQ. The queue policies must allow the topic to send messages.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'One SNS topic with an SQS queue subscription per service',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Queues buffer messages so slow or failed consumers do not lose events',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Queue access policy allows the topic to send',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: message-filtering
+    title: Message filtering
+    summary: A subscription filter policy delivers only matching messages to that subscriber, based on attributes or the message body.
+    explanation: |
+      A **filter policy** on a subscription is a JSON document that matches message attributes (or, if configured,
+      the message body). SNS delivers a message to that subscription only when it matches, so publishers send one
+      stream and each subscriber receives just what it needs, without filtering code in consumers.
+    examples: |
+      The warehouse queue's filter policy accepts `{"eventType": ["order_placed"]}`; the refunds queue accepts
+      `{"eventType": ["order_refunded"]}`.
+    limitations: |
+      Filtering is per subscription and limited to the policy language; complex routing may suit EventBridge better.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+      - { certification: aws/SAA/C03, domain: D4, relevance: supporting }
+    citations:
+      - source: sns-message-filtering
+        excerpt: A subscription filter policy lets a subscriber receive only a subset of the messages published to a topic, matching on message attributes or the message body.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: filter-instead-of-topics
+        dimension: solution
+        difficulty: 2
+        prompt: Consumers of one topic each care about different event types and discard most messages. How can SNS reduce this waste without creating many topics?
+        referenceAnswer: |
+          Add a filter policy to each subscription that matches only the relevant event types (on message
+          attributes or the body). SNS then delivers only matching messages to each subscriber, so consumers stop
+          receiving and discarding irrelevant ones.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Use subscription filter policies', weight: 3, critical: true }
+            - {
+                id: p2,
+                text: 'Filtering on message attributes or body; non-matching messages are not delivered',
+                weight: 2,
+                critical: true,
+              }
+
+  - slug: fifo-topics
+    title: FIFO topics
+    summary: SNS FIFO topics preserve order within a message group and deduplicate messages, delivering to SQS queues.
+    explanation: |
+      An **SNS FIFO topic** (name ends in `.fifo`) delivers messages in order within each **message group** and
+      removes duplicates using a deduplication ID or content-based deduplication. FIFO topics deliver to Amazon SQS
+      queues, and pairing them with SQS FIFO queues keeps ordering end to end.
+    examples: |
+      Price updates for each product must arrive in sequence at both the cache-updater and the audit service: an SNS
+      FIFO topic with `MessageGroupId = productId` fans out to two SQS FIFO queues.
+    limitations: |
+      FIFO topics support fewer subscriber types than standard topics and have lower throughput.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: sns-fifo-topics
+        excerpt: SNS FIFO topics provide strict message ordering and deduplication and deliver messages to Amazon SQS queues subscribed to the topic.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: ordered-fan-out
+        dimension: how
+        difficulty: 3
+        prompt: You need ordered, deduplicated fan-out of events to two consumers. Which SNS and SQS types do you combine, and what controls the ordering?
+        referenceAnswer: |
+          Use an SNS FIFO topic subscribed by SQS FIFO queues. Ordering is preserved within each message group
+          (MessageGroupId), and deduplication uses a deduplication ID or content-based deduplication. Standard topics
+          or standard queues would break the ordering guarantee.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'SNS FIFO topic with SQS FIFO queue subscriptions',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Ordering is per message group (MessageGroupId)',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Deduplication ID or content-based deduplication',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: delivery-retries
+    title: Delivery retries and dead-letter queues
+    summary: SNS retries failed deliveries according to a delivery policy and can send undeliverable messages to a subscription DLQ.
+    explanation: |
+      When a delivery fails, SNS retries it following the protocol's **delivery policy** (configurable for HTTP/S
+      endpoints). Messages that still cannot be delivered are discarded unless the subscription has a
+      **dead-letter queue** (an SQS queue) configured through a redrive policy, where you can inspect and reprocess
+      them.
+    examples: |
+      An HTTP subscriber is down for an hour; retries exhaust and the messages land in the subscription's DLQ instead
+      of being lost.
+    limitations: |
+      Retries are not infinite, so without a DLQ (or an SQS subscriber that buffers) undeliverable messages are lost.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+    citations:
+      - source: sns-message-delivery-retries
+        excerpt: SNS defines a delivery policy for each delivery protocol that controls how it retries failed deliveries, and messages that cannot be delivered after retries can be sent to a dead-letter queue if one is configured.
+        excerptKind: paraphrase
+        supports: limitation
+    questions:
+      - key: undeliverable-messages
+        dimension: not_do
+        difficulty: 2
+        prompt: What happens to an SNS message when a subscriber endpoint stays unavailable beyond the retry policy, and how do you avoid losing it?
+        referenceAnswer: |
+          After the delivery policy's retries are exhausted, SNS discards the message for that subscription. Configure
+          a dead-letter queue (SQS) on the subscription to capture undeliverable messages, or subscribe an SQS queue
+          that buffers messages for the consumer.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'After retries are exhausted the message is dropped',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Configure a subscription dead-letter queue (or buffer with SQS)',
+                weight: 3,
+                critical: true,
+              }

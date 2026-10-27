@@ -1,5 +1,5 @@
 {
-  "name": "aws-architecture-muscle-memory",
+  "name": "the-foundation",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -20,7 +20,7 @@
     "test:int": "vitest run --config vitest.integration.config.ts",
     "test:db": "supabase test db",
     "test:e2e": "playwright test",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test:unit",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run catalog:validate && npm run test:unit",
     "check:secrets": "node scripts/check-bundle-secrets.ts dist",
     "check:deno": "cd supabase/functions && deno check .",
     "db:start": "supabase start",
@@ -28,7 +28,9 @@
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/database.types.ts",
     "db:create-owner": "node scripts/create-owner.ts",
-    "env:local": "node scripts/write-local-env.ts"
+    "env:local": "node scripts/write-local-env.ts",
+    "catalog:validate": "node scripts/catalog-validate.ts",
+    "catalog:import": "node scripts/catalog-import.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",
@@ -39,7 +41,9 @@
     "lucide-react": "^1.62.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
     "react-router": "^8.5.0",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"
   },
@@ -70,6 +74,7 @@
     "typescript": "~6.0.0",
     "typescript-eslint": "^8.72.1",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
   }
 }

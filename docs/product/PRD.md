@@ -1,6 +1,6 @@
 # Product Requirements Document
 
-**Product:** AWS Architecture Muscle Memory
+**Product:** The Foundation (formerly "AWS Architecture Muscle Memory")
 **Status:** Draft for approval · **Version:** 0.1 · **Owner:** Project owner (single learner)
 
 ## 1. Problem

@@ -1,0 +1,355 @@
+{
+  "id": "b626aa7d-aa90-4f4d-a41b-206d8651e8bb",
+  "name": "AWS Lambda",
+  "slug": "lambda",
+  "origin": "ai_draft",
+  "status": "in_review",
+  "aliases": ["Lambda"],
+  "docsUrl": "https://docs.aws.amazon.com/lambda/latest/dg/welcome.html",
+  "related": [
+    {
+      "noteMd": "Use EC2 (or containers) for long-running, always-on, or OS-level workloads.",
+      "service": {
+        "name": "Amazon Elastic Compute Cloud",
+        "slug": "ec2"
+      },
+      "relation": "alternative_to"
+    },
+    {
+      "noteMd": "SNS invokes Lambda asynchronously for each published message.",
+      "service": {
+        "name": "Amazon Simple Notification Service",
+        "slug": "sns"
+      },
+      "relation": "commonly_paired_with"
+    },
+    {
+      "noteMd": "Lambda polls SQS through an event source mapping to process messages in batches.",
+      "service": {
+        "name": "Amazon Simple Queue Service",
+        "slug": "sqs"
+      },
+      "relation": "commonly_paired_with"
+    },
+    {
+      "noteMd": "Every function needs an execution role.",
+      "service": {
+        "name": "AWS Identity and Access Management",
+        "slug": "iam"
+      },
+      "relation": "prerequisite_for"
+    }
+  ],
+  "category": {
+    "id": "172a743a-522f-4672-a85d-b8699bd390cc",
+    "name": "Compute",
+    "slug": "compute"
+  },
+  "concepts": [
+    {
+      "id": "548e3d1e-1f41-49d0-a8f5-73420041a837",
+      "slug": "invocation-models",
+      "title": "Invocation models",
+      "origin": "ai_draft",
+      "status": "in_review",
+      "domains": [
+        {
+          "id": "275cc0d4-a5b0-41e5-8de8-9c6a8ce9cddd",
+          "code": "D2",
+          "name": "Design Resilient Architectures",
+          "relevance": "core",
+          "certification": "SAA-C03"
+        },
+        {
+          "id": "c4a10443-381f-4085-ac0e-57077774e4e3",
+          "code": "D3",
+          "name": "Design High-Performing Architectures",
+          "relevance": "supporting",
+          "certification": "SAA-C03"
+        }
+      ],
+      "progress": null,
+      "citations": [
+        {
+          "source": {
+            "id": "b9f54f9d-a187-4212-900e-938fc0a7c357",
+            "url": "https://docs.aws.amazon.com/lambda/latest/dg/lambda-invocation.html",
+            "title": "AWS Lambda Developer Guide: Understanding Lambda function invocation methods",
+            "trustTier": "official",
+            "sourceType": "aws_documentation",
+            "retrievedAt": null
+          },
+          "excerpt": "Lambda functions can be invoked synchronously, where the caller waits for a response, or asynchronously, where Lambda queues the event and returns immediately; event source mappings let Lambda read from streams and queues and invoke the function with batches.",
+          "pageEnd": null,
+          "pageStart": null,
+          "passageId": "40ba703d-f2bc-45d9-9943-60fba5bbf799",
+          "excerptKind": "paraphrase",
+          "sectionPath": null,
+          "supportType": "defines"
+        }
+      ],
+      "summaryMd": "Functions are invoked synchronously, asynchronously, or by an event source mapping that polls a stream or queue.",
+      "examplesMd": "- An S3 upload triggers a thumbnail function asynchronously.\n- An SQS queue feeds an order processor through an event source mapping with a batch size of 10.",
+      "explanationMd": "- **Synchronous**: the caller waits for the result (for example API Gateway, an Application Load Balancer, or an SDK\n  call with `RequestResponse`). Errors go back to the caller, which decides whether to retry.\n- **Asynchronous**: Lambda queues the event and returns immediately (for example S3 notifications, SNS, EventBridge).\n  Lambda retries failed asynchronous invocations (twice by default) and can send failures to a dead-letter queue\n  or an on-failure destination.\n- **Event source mapping**: Lambda itself polls a source such as SQS, Kinesis, or DynamoDB Streams and invokes the\n  function with batches of records.",
+      "limitationsMd": "Retry behavior depends on the model: synchronous callers own their retries; stream sources retry a failing batch\nuntil it succeeds or the records expire unless you configure error handling.",
+      "questionCount": 0
+    },
+    {
+      "id": "be6ffa11-dc86-4d58-8088-9b566f774698",
+      "slug": "execution-limits",
+      "title": "Execution time, memory, and storage limits",
+      "origin": "ai_draft",
+      "status": "in_review",
+      "domains": [
+        {
+          "id": "c4a10443-381f-4085-ac0e-57077774e4e3",
+          "code": "D3",
+          "name": "Design High-Performing Architectures",
+          "relevance": "core",
+          "certification": "SAA-C03"
+        },
+        {
+          "id": "26c63c7c-b7a5-4dee-b3e5-857a3c282f0b",
+          "code": "D4",
+          "name": "Design Cost-Optimized Architectures",
+          "relevance": "supporting",
+          "certification": "SAA-C03"
+        }
+      ],
+      "progress": null,
+      "citations": [
+        {
+          "source": {
+            "id": "0d74d9b8-125c-4707-9b6e-d22be7fe3efd",
+            "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+            "title": "AWS Lambda Developer Guide: Lambda quotas",
+            "trustTier": "official",
+            "sourceType": "aws_documentation",
+            "retrievedAt": null
+          },
+          "excerpt": "The function timeout can be set up to 900 seconds (15 minutes); memory can be configured between 128 MB and 10,240 MB; ephemeral /tmp storage is configurable between 512 MB and 10,240 MB.",
+          "pageEnd": null,
+          "pageStart": null,
+          "passageId": "0d68dac9-ef5d-4f5f-bd96-0a606da042ed",
+          "excerptKind": "paraphrase",
+          "sectionPath": "Function configuration, deployment, and execution",
+          "supportType": "limitation"
+        }
+      ],
+      "summaryMd": "An invocation runs for at most 15 minutes, with 128 MB–10,240 MB of memory and configurable ephemeral storage.",
+      "examplesMd": "A video transcode that takes 40 minutes does not fit in a single invocation: split it into chunks orchestrated by\nStep Functions, or run it on ECS/Fargate, EC2, or AWS Batch.",
+      "explanationMd": "The function **timeout** is configurable up to **900 seconds (15 minutes)**; the default is 3 seconds. Memory is\nconfigurable from **128 MB to 10,240 MB**, and CPU is allocated in proportion to memory, so raising memory can\nmake CPU-bound functions faster. Each environment has ephemeral `/tmp` storage of 512 MB by default, configurable\nup to 10,240 MB.",
+      "limitationsMd": "Increasing memory does not raise the 15-minute cap. Deployment package and payload sizes are also capped; check\nthe current quotas page before relying on a specific number.",
+      "questionCount": 0
+    },
+    {
+      "id": "7c753e95-d89e-4dff-90cd-ca21aa42cfb0",
+      "slug": "concurrency",
+      "title": "Concurrency and scaling",
+      "origin": "ai_draft",
+      "status": "in_review",
+      "domains": [
+        {
+          "id": "275cc0d4-a5b0-41e5-8de8-9c6a8ce9cddd",
+          "code": "D2",
+          "name": "Design Resilient Architectures",
+          "relevance": "supporting",
+          "certification": "SAA-C03"
+        },
+        {
+          "id": "c4a10443-381f-4085-ac0e-57077774e4e3",
+          "code": "D3",
+          "name": "Design High-Performing Architectures",
+          "relevance": "core",
+          "certification": "SAA-C03"
+        }
+      ],
+      "progress": {
+        "masteryStatus": "learning",
+        "firstStudiedAt": "2026-10-27T10:25:59.018323+00:00"
+      },
+      "citations": [
+        {
+          "source": {
+            "id": "828d356c-3c29-4a76-be1f-120e44c0fa2a",
+            "url": "https://docs.aws.amazon.com/lambda/latest/dg/lambda-concurrency.html",
+            "title": "AWS Lambda Developer Guide: Understanding Lambda function scaling",
+            "trustTier": "official",
+            "sourceType": "aws_documentation",
+            "retrievedAt": null
+          },
+          "excerpt": "Concurrency is the number of in-flight requests a function handles at the same time; each concurrent request uses a separate execution environment, and scaling is bounded by the account's Regional concurrency quota.",
+          "pageEnd": null,
+          "pageStart": null,
+          "passageId": "a66e88f1-2fef-4128-8ada-2916a281c11b",
+          "excerptKind": "paraphrase",
+          "sectionPath": null,
+          "supportType": "defines"
+        },
+        {
+          "source": {
+            "id": "828d356c-3c29-4a76-be1f-120e44c0fa2a",
+            "url": "https://docs.aws.amazon.com/lambda/latest/dg/lambda-concurrency.html",
+            "title": "AWS Lambda Developer Guide: Understanding Lambda function scaling",
+            "trustTier": "official",
+            "sourceType": "aws_documentation",
+            "retrievedAt": null
+          },
+          "excerpt": "Reserved concurrency sets both the maximum and a guaranteed amount of concurrency for a function, while provisioned concurrency keeps a number of environments initialized to avoid cold-start latency.",
+          "pageEnd": null,
+          "pageStart": null,
+          "passageId": "18cac78d-8604-46cd-8d62-f8e1f1b07261",
+          "excerptKind": "paraphrase",
+          "sectionPath": null,
+          "supportType": "evidence"
+        }
+      ],
+      "summaryMd": "Each concurrent request needs its own execution environment; account and function concurrency limits cap scaling.",
+      "examplesMd": "Reserve concurrency for a payment function so a burst in another function cannot starve it, and cap a function\nthat writes to a small relational database so it cannot exhaust connections.",
+      "explanationMd": "Concurrency is the number of requests a function is serving at the same moment. Lambda scales by creating more\nexecution environments, up to the account's concurrency quota for the Region (1,000 by default, increasable).\n**Reserved concurrency** guarantees and caps capacity for one function. **Provisioned concurrency**\npre-initializes environments to remove cold starts, at an additional cost.",
+      "limitationsMd": "Requests beyond available concurrency are throttled. Synchronous callers receive a throttling error; asynchronous\nevents are retried by Lambda.",
+      "questionCount": 0
+    },
+    {
+      "id": "fb42e4b9-a76e-451b-bc56-7b81a1ca2873",
+      "slug": "permissions",
+      "title": "Execution role and resource-based policy",
+      "origin": "ai_draft",
+      "status": "in_review",
+      "domains": [
+        {
+          "id": "2c5448d5-6265-4674-99fe-e54318f4fde1",
+          "code": "D1",
+          "name": "Design Secure Architectures",
+          "relevance": "core",
+          "certification": "SAA-C03"
+        }
+      ],
+      "progress": null,
+      "citations": [
+        {
+          "source": {
+            "id": "25637aee-eb3e-407e-90e7-cc04e7df1dc5",
+            "url": "https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html",
+            "title": "AWS Lambda Developer Guide: Defining Lambda function permissions with an execution role",
+            "trustTier": "official",
+            "sourceType": "aws_documentation",
+            "retrievedAt": null
+          },
+          "excerpt": "A Lambda function's execution role is an IAM role that grants the function permission to access AWS services and resources; Lambda assumes the role when the function is invoked.",
+          "pageEnd": null,
+          "pageStart": null,
+          "passageId": "bc4e86c7-a21c-4340-b9dd-3cc072c2df06",
+          "excerptKind": "paraphrase",
+          "sectionPath": null,
+          "supportType": "defines"
+        }
+      ],
+      "summaryMd": "The execution role controls what the function can do; the resource-based policy controls who can invoke it.",
+      "examplesMd": "An S3-triggered function needs `s3:GetObject` in its execution role to read the uploaded file, and a\nresource-based policy statement allowing the S3 service to invoke it.",
+      "explanationMd": "A function's **execution role** is an IAM role that Lambda assumes when it runs; its policies decide which AWS\nAPIs the code can call (for example writing logs to CloudWatch or reading from DynamoDB). Separately, a\n**resource-based policy** on the function grants other principals or services (such as S3, SNS, or another\naccount) permission to invoke it.",
+      "limitationsMd": "Never embed long-term access keys in function code or environment variables; the execution role already\nprovides temporary credentials.",
+      "questionCount": 0
+    },
+    {
+      "id": "74514756-ed13-4d0c-ac18-68dc67ac5e49",
+      "slug": "vpc-networking",
+      "title": "VPC networking",
+      "origin": "ai_draft",
+      "status": "in_review",
+      "domains": [
+        {
+          "id": "2c5448d5-6265-4674-99fe-e54318f4fde1",
+          "code": "D1",
+          "name": "Design Secure Architectures",
+          "relevance": "core",
+          "certification": "SAA-C03"
+        },
+        {
+          "id": "275cc0d4-a5b0-41e5-8de8-9c6a8ce9cddd",
+          "code": "D2",
+          "name": "Design Resilient Architectures",
+          "relevance": "supporting",
+          "certification": "SAA-C03"
+        }
+      ],
+      "progress": null,
+      "citations": [
+        {
+          "source": {
+            "id": "c5d6bf46-64ac-4780-a720-4b52587ec19d",
+            "url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html",
+            "title": "AWS Lambda Developer Guide: Giving Lambda functions access to resources in an Amazon VPC",
+            "trustTier": "official",
+            "sourceType": "aws_documentation",
+            "retrievedAt": null
+          },
+          "excerpt": "Connecting a function to a VPC lets it access resources in private subnets through network interfaces in those subnets; internet access from a VPC-connected function requires a NAT gateway, because the function does not receive a public IP address.",
+          "pageEnd": null,
+          "pageStart": null,
+          "passageId": "b746f798-9ce8-4038-9fe0-16114fb9b7bb",
+          "excerptKind": "paraphrase",
+          "sectionPath": null,
+          "supportType": "limitation"
+        }
+      ],
+      "summaryMd": "Functions attached to a VPC reach private resources through ENIs in your subnets and need a NAT gateway for internet access.",
+      "examplesMd": "A function that queries RDS in private subnets and also calls a third-party API needs both VPC attachment and a\nNAT gateway (or the API reached another way).",
+      "explanationMd": "By default a function runs in a Lambda-managed network with internet access but no access to resources in your\nprivate subnets. Attaching it to a **VPC** (subnets plus security groups) lets it reach private resources such\nas an RDS database, using elastic network interfaces in those subnets. A VPC-attached function has no public IP,\nso reaching the internet requires a route through a **NAT gateway**; AWS services can also be reached through\nVPC endpoints.",
+      "limitationsMd": "Placing a VPC-attached function in a public subnet does not give it internet access.",
+      "questionCount": 0
+    },
+    {
+      "id": "ade59c35-6c93-47a4-8e9a-85394a7dbb5e",
+      "slug": "statelessness",
+      "title": "Stateless execution",
+      "origin": "ai_draft",
+      "status": "in_review",
+      "domains": [
+        {
+          "id": "275cc0d4-a5b0-41e5-8de8-9c6a8ce9cddd",
+          "code": "D2",
+          "name": "Design Resilient Architectures",
+          "relevance": "core",
+          "certification": "SAA-C03"
+        }
+      ],
+      "progress": null,
+      "citations": [
+        {
+          "source": {
+            "id": "1eafd0af-7afe-435a-9c5f-a41cb18c0a2e",
+            "url": "https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html",
+            "title": "AWS Lambda Developer Guide: Understanding the Lambda execution environment lifecycle",
+            "trustTier": "official",
+            "sourceType": "aws_documentation",
+            "retrievedAt": null
+          },
+          "excerpt": "Lambda may reuse an execution environment for subsequent invocations, but it can also terminate environments at any time, so functions should not rely on local state persisting between invocations.",
+          "pageEnd": null,
+          "pageStart": null,
+          "passageId": "c183c956-63bf-4ede-95d5-0407a58b3dd4",
+          "excerptKind": "paraphrase",
+          "sectionPath": null,
+          "supportType": "limitation"
+        }
+      ],
+      "summaryMd": "Execution environments may be reused or discarded at any time, so durable state belongs in external services.",
+      "examplesMd": "A shopping-cart function stores the cart in DynamoDB rather than in a module-level variable.",
+      "explanationMd": "Lambda can freeze and reuse an execution environment for later invocations, which is why initializing SDK clients\noutside the handler improves performance. But Lambda may also create new environments or discard old ones at any\ntime, so in-memory data and `/tmp` contents are not durable. Keep state in services such as DynamoDB, S3, or\nElastiCache.",
+      "limitationsMd": "Caching in the execution environment is safe only for data you can lose or rebuild.",
+      "questionCount": 0
+    }
+  ],
+  "summaryMd": "Event-driven, serverless compute that runs your code in managed execution environments and bills per request and duration.",
+  "dimensions": {
+    "how": "Each invocation runs in an isolated **execution environment**. Lambda creates environments on demand (a *cold start*),\nmay reuse a warm environment for later invocations, and scales out by adding environments: one environment\nhandles one request at a time, so concurrency equals the number of in-flight requests.",
+    "what": "A serverless compute service that runs functions (your code plus a runtime) in response to events or direct calls,\nwithout you provisioning or managing servers.",
+    "when": "Short, event-driven, or spiky workloads: API backends, file processing on S3 upload, stream and queue consumers,\nscheduled tasks, and glue between AWS services.",
+    "where": "In the compute layer behind **API Gateway** or an **Application Load Balancer**, or as a consumer of events from\nS3, SNS, EventBridge, SQS, Kinesis, or DynamoDB Streams. Often orchestrated by **Step Functions** for multi-step work.",
+    "not_do": "- It does not run long jobs: a single invocation is capped at **15 minutes**.\n- It does not keep state between invocations; any reuse of memory or `/tmp` is an optimization, not a guarantee.\n- It is not a place for always-on servers, persistent connections you control, or workloads needing OS-level access.",
+    "problem": "Running code for intermittent or spiky workloads without paying for idle servers or operating fleets\n(patching, capacity planning, scaling).",
+    "solution": "AWS manages the hosts, runtime patching, and scaling; you pay per request and per GB-second of execution.\nEvent sources (S3, SNS, EventBridge, SQS, API Gateway, and more) trigger functions directly.",
+    "trade_offs": "No servers to manage and fine-grained billing, in exchange for cold-start latency, a duration cap, concurrency\nquotas, limited control of the runtime environment, and higher cost than EC2 or containers at constant high load."
+  }
+}

@@ -1,0 +1,296 @@
+slug: vpc
+name: Amazon Virtual Private Cloud
+aliases: [VPC]
+category: networking
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html
+summary: A logically isolated network in a Region where you define IP ranges, subnets, routing, and traffic filtering for your resources.
+
+dimensions:
+  what: |
+    Your own isolated virtual network in an AWS Region, with an IP address range (CIDR block) you choose, divided
+    into subnets that each live in one Availability Zone.
+  how: |
+    Route tables decide where traffic from each subnet goes (an internet gateway, a NAT gateway, a peering
+    connection, a transit gateway, or a VPC endpoint). Security groups filter traffic at the network interface;
+    network ACLs filter it at the subnet boundary.
+  problem: |
+    Workloads need private addressing, control over which components are reachable from the internet, and network
+    segmentation, without building physical networks.
+  solution: |
+    Software-defined subnets, routing, gateways, and filters let you place internet-facing components in public
+    subnets and keep databases and application servers in private subnets.
+  not_do: |
+    - A VPC does not span Regions, and a subnet does not span Availability Zones.
+    - VPC peering is not transitive: A↔B and B↔C does not connect A and C.
+    - It does not inspect application payloads (use AWS WAF or AWS Network Firewall).
+  when: |
+    For any workload that runs in a network: EC2, RDS, ELB, ECS, and VPC-attached Lambda all live in subnets.
+  where: |
+    The shared network foundation beneath the compute and data tiers: load balancers in public subnets, application
+    and database tiers in private subnets across at least two Availability Zones.
+  trade_offs: |
+    Full network control and isolation, in exchange for design work (CIDR planning, routing, NAT costs) and
+    operational responsibility for getting filtering and connectivity right.
+
+related:
+  - { service: ec2, relation: prerequisite_for, note: 'Instances launch into a subnet of a VPC.' }
+  - {
+      service: rds,
+      relation: prerequisite_for,
+      note: 'DB instances use a DB subnet group spanning Availability Zones.',
+    }
+  - {
+      service: elastic-load-balancing,
+      relation: prerequisite_for,
+      note: 'Load balancers are placed in subnets across Availability Zones.',
+    }
+
+concepts:
+  - slug: subnets-and-routing
+    title: Public and private subnets
+    summary: A subnet is public when its route table sends internet traffic to an internet gateway; otherwise it is private.
+    explanation: |
+      Each subnet sits in exactly one Availability Zone and is associated with one route table. A **public subnet**
+      has a route (typically `0.0.0.0/0`) to an **internet gateway**, and its instances need public IP addresses to
+      be reachable. A **private subnet** has no route to an internet gateway; outbound internet access, if needed,
+      goes through a NAT gateway.
+    examples: |
+      Place an Application Load Balancer in public subnets in two AZs, and the application instances and database in
+      private subnets in the same AZs.
+    limitations: |
+      "Public" and "private" are routing outcomes, not subnet settings you toggle.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+      - { certification: aws/SAA/C03, domain: D2, relevance: supporting }
+    citations:
+      - source: vpc-subnets
+        excerpt: A subnet is a range of IP addresses in your VPC that resides in a single Availability Zone; a subnet whose route table has a route to an internet gateway is a public subnet.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: what-makes-public
+        dimension: what
+        difficulty: 1
+        prompt: What makes a subnet public in a VPC, and what else does an instance need to be reachable from the internet?
+        referenceAnswer: |
+          A subnet is public when its route table has a route to an internet gateway. The instance also needs a
+          public IPv4 (or Elastic IP) address, and its security group and network ACL must allow the traffic.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Route table has a route to an internet gateway',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Instance needs a public IP or Elastic IP',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Security group and NACL must allow the traffic',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: nat-gateway
+    title: NAT gateways
+    summary: A NAT gateway lets instances in private subnets start outbound internet connections without accepting inbound ones.
+    explanation: |
+      A **NAT gateway** is a managed service placed in a public subnet. Private subnets route `0.0.0.0/0` to it, so
+      their instances can reach the internet (for updates or external APIs) while remaining unreachable from it. A
+      NAT gateway is created in one Availability Zone; for resilience, deploy one per AZ and route each private subnet
+      to the NAT gateway in its own AZ.
+    examples: |
+      Application servers in private subnets download OS patches through the NAT gateway in their AZ.
+    limitations: |
+      NAT gateways charge per hour and per GB processed. For traffic to S3 or DynamoDB, a gateway endpoint avoids NAT
+      processing charges.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D4, relevance: supporting }
+    citations:
+      - source: vpc-nat-gateway
+        excerpt: A NAT gateway enables instances in a private subnet to connect to services outside the VPC while preventing external services from initiating connections to those instances; each NAT gateway is created in a specific Availability Zone.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: nat-high-availability
+        dimension: trade_offs
+        difficulty: 2
+        prompt: Why might a single NAT gateway be a problem for a multi-AZ application, and how do you design around it?
+        referenceAnswer: |
+          A NAT gateway lives in one Availability Zone. If that AZ fails, private subnets in other AZs that route
+          through it lose outbound internet access (and cross-AZ traffic adds data transfer cost). Deploy a NAT
+          gateway in each AZ and route each private subnet to the NAT gateway in its own AZ.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'A NAT gateway is scoped to one Availability Zone',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Deploy one NAT gateway per AZ with per-AZ routing',
+                weight: 3,
+                critical: true,
+              }
+            - { id: p3, text: 'Mentions cross-AZ data transfer cost', weight: 1, critical: false }
+
+  - slug: security-groups-vs-nacls
+    title: Security groups vs network ACLs
+    summary: Security groups are stateful allow-lists on network interfaces; network ACLs are stateless, ordered allow/deny rules on subnets.
+    explanation: |
+      | | Security group | Network ACL |
+      |---|---|---|
+      | Applies to | Network interfaces (instances) | Subnets |
+      | State | **Stateful**: return traffic is allowed automatically | **Stateless**: return traffic needs its own rule |
+      | Rules | Allow only | Allow and deny, evaluated in number order |
+      | Default | Deny all inbound, allow all outbound | Default NACL allows all |
+      Security groups can reference other security groups, which is the usual way to allow "app tier to database tier".
+    examples: |
+      To block a specific malicious IP range, use a NACL deny rule; security groups cannot deny.
+    limitations: |
+      Because NACLs are stateless, forgetting the ephemeral port range for return traffic is a common cause of broken connections.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+    citations:
+      - source: vpc-security-groups
+        excerpt: Security groups act at the resource level, support allow rules only, and are stateful, so responses to allowed inbound traffic are allowed regardless of outbound rules.
+        excerptKind: paraphrase
+        supports: defines
+      - source: vpc-network-acls
+        excerpt: Network ACLs control traffic at the subnet level, support allow and deny rules evaluated in order, and are stateless, so return traffic must be explicitly allowed.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: block-ip-range
+        dimension: how
+        difficulty: 2
+        prompt: You must block traffic from one IP range to all instances in a subnet. Do you use a security group or a network ACL? Explain the key differences that decide it.
+        referenceAnswer: |
+          Use a network ACL deny rule. Security groups support only allow rules (they cannot deny), apply per
+          network interface, and are stateful. Network ACLs apply to the whole subnet, support ordered allow and deny
+          rules, and are stateless (return traffic needs explicit rules).
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Use a network ACL deny rule', weight: 3, critical: true }
+            - {
+                id: p2,
+                text: 'Security groups cannot deny; they allow only',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Security groups are stateful; NACLs are stateless',
+                weight: 2,
+                critical: false,
+              }
+            - { id: p4, text: 'NACLs apply at the subnet level', weight: 1, critical: false }
+          knownMisconceptions:
+            - slug: sg-can-deny
+              statement: Security groups can contain deny rules.
+              correction: Security groups only allow; use a network ACL to deny traffic.
+
+  - slug: vpc-endpoints
+    title: VPC endpoints
+    summary: Endpoints let resources reach AWS services privately; gateway endpoints serve S3 and DynamoDB through route tables.
+    explanation: |
+      A **gateway endpoint** adds a route-table target for **Amazon S3** or **DynamoDB**, keeping that traffic on the
+      AWS network with no NAT gateway and no endpoint charge. An **interface endpoint** (AWS PrivateLink) places
+      elastic network interfaces with private IPs in your subnets for many other AWS services and partner services,
+      billed per hour and per GB.
+    examples: |
+      A private-subnet batch job reads terabytes from S3 through a gateway endpoint instead of a NAT gateway, cutting
+      data processing charges.
+    limitations: |
+      Gateway endpoints exist only for S3 and DynamoDB, and they work within the VPC's own Region.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D1 }
+      - { certification: aws/SAA/C03, domain: D4 }
+    citations:
+      - source: vpc-gateway-endpoints
+        excerpt: Gateway VPC endpoints provide private connectivity to Amazon S3 and DynamoDB without an internet gateway or NAT device, and there is no additional charge for using them.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: s3-without-nat
+        dimension: solution
+        difficulty: 2
+        prompt: Instances in private subnets send large volumes of data to S3 through a NAT gateway. How can you make this private and cheaper?
+        referenceAnswer: |
+          Create a gateway VPC endpoint for S3 and add it to the private subnets' route tables. Traffic to S3 then
+          stays on the AWS network, bypasses the NAT gateway (no NAT processing charges), and gateway endpoints have
+          no additional charge. An endpoint policy can restrict which buckets are reachable.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Use a gateway VPC endpoint for S3', weight: 3, critical: true }
+            - {
+                id: p2,
+                text: 'Traffic bypasses the NAT gateway and its processing cost',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Gateway endpoints are added to route tables and have no extra charge',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: vpc-connectivity
+    title: VPC peering and Transit Gateway
+    summary: Peering connects two VPCs one-to-one and is not transitive; a transit gateway acts as a hub for many VPCs and networks.
+    explanation: |
+      **VPC peering** routes traffic privately between two VPCs (same or different accounts and Regions). CIDR
+      ranges must not overlap, and peering is **not transitive**. A **transit gateway** is a regional hub that many
+      VPCs and on-premises connections attach to, which avoids a full mesh of peering connections.
+    examples: |
+      Three VPCs that must all talk to each other need three peering connections, or one transit gateway.
+    limitations: |
+      Peering does not provide edge-to-edge routing: a VPC cannot use its peer's internet gateway, NAT gateway, or VPN.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: vpc-peering
+        excerpt: A VPC peering connection routes traffic between two VPCs using private addresses; peering relationships are not transitive and the VPCs cannot have overlapping CIDR blocks.
+        excerptKind: paraphrase
+        supports: limitation
+    questions:
+      - key: peering-transitivity
+        dimension: not_do
+        difficulty: 2
+        prompt: VPC A is peered with B, and B with C. Can A reach C? What would you use to connect many VPCs instead?
+        referenceAnswer: |
+          No. VPC peering is not transitive, so A cannot reach C through B; you would need a direct A–C peering
+          connection. To connect many VPCs, use a transit gateway as a central hub instead of a mesh of peering
+          connections.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'No: peering is not transitive', weight: 3, critical: true }
+            - {
+                id: p2,
+                text: 'Use a transit gateway (hub) for many VPCs, or a direct A–C peering',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Peered VPCs cannot have overlapping CIDRs',
+                weight: 1,
+                critical: false,
+              }

@@ -1,0 +1,295 @@
+slug: dynamodb
+name: Amazon DynamoDB
+aliases: [DynamoDB, DDB]
+category: database
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html
+summary: Serverless key-value and document database with single-digit-millisecond performance at virtually any scale.
+
+dimensions:
+  what: |
+    A fully managed, serverless NoSQL database that stores **items** in **tables**, addressed by a primary key, with
+    no servers or storage to provision.
+  how: |
+    Data is partitioned by the **partition key** and stored redundantly across multiple Availability Zones in a Region.
+    You read and write individual items or query items that share a partition key, paying for capacity in on-demand
+    or provisioned mode.
+  problem: |
+    Relational databases become hard to scale for massive, high-request-rate workloads with simple access patterns,
+    and require operating servers.
+  solution: |
+    Horizontal partitioning handled by AWS, predictable low latency, automatic scaling, and features such as global
+    tables, streams, TTL, point-in-time recovery, and the DAX cache.
+  not_do: |
+    - It does not support joins or ad hoc relational queries; access patterns must be designed up front (a Scan reads
+      the whole table).
+    - An item cannot exceed 400 KB; store large objects in S3 and keep a pointer.
+    - Global secondary indexes do not support strongly consistent reads.
+  when: |
+    High-scale, low-latency workloads with known access patterns: sessions, user profiles, carts, gaming state, IoT
+    data, and serverless backends.
+  where: |
+    The data tier for serverless and microservice architectures, often behind Lambda, with DynamoDB Streams feeding
+    event-driven processing.
+  trade_offs: |
+    Near-unlimited scale with no servers, in exchange for up-front data modeling around access patterns, limited query
+    flexibility, and the need to choose and tune a capacity mode.
+
+related:
+  - {
+      service: rds,
+      relation: alternative_to,
+      note: 'Choose RDS for relational data, SQL joins, and flexible queries.',
+    }
+  - {
+      service: lambda,
+      relation: commonly_paired_with,
+      note: 'DynamoDB Streams can trigger Lambda through an event source mapping.',
+    }
+
+concepts:
+  - slug: data-model-and-keys
+    title: Tables, items, and primary keys
+    summary: The primary key is a partition key, optionally combined with a sort key; queries are efficient only through keys and indexes.
+    explanation: |
+      Each item is identified by its **primary key**: either a **partition key** alone, or a partition key plus a
+      **sort key** (a composite key). The partition key is hashed to choose the storage partition; items with the same
+      partition key are stored together, ordered by sort key. **Query** reads items for one partition key (optionally
+      a sort-key range); **Scan** reads the entire table and is expensive. Items can be up to **400 KB**.
+    examples: |
+      Orders table: partition key `customerId`, sort key `orderDate`, so "orders for a customer in October" is one Query.
+    limitations: |
+      A low-cardinality partition key (for example `status`) concentrates traffic on a few partitions ("hot partitions").
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+    citations:
+      - source: dynamodb-core-components
+        excerpt: DynamoDB supports simple primary keys made of a partition key and composite primary keys made of a partition key and a sort key; the partition key value determines the partition where the item is stored.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: query-vs-scan
+        dimension: how
+        difficulty: 2
+        prompt: Explain partition keys and sort keys, and why a Query is preferred over a Scan in DynamoDB.
+        referenceAnswer: |
+          The partition key is hashed to determine which partition stores the item; with a composite key, items that
+          share a partition key are stored together and ordered by sort key. A Query targets one partition key value
+          (optionally a sort-key range) and reads only matching items, while a Scan reads every item in the table and
+          consumes far more capacity.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Partition key determines the partition (hashed)',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Sort key orders items within a partition key',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Query reads only matching items; Scan reads the whole table',
+                weight: 2,
+                critical: true,
+              }
+
+  - slug: capacity-modes
+    title: On-demand vs provisioned capacity
+    summary: On-demand bills per request and scales automatically; provisioned sets read/write capacity units, optionally with auto scaling, for predictable traffic.
+    explanation: |
+      - **On-demand**: pay per read and write request with no capacity planning; suits new, spiky, or unpredictable
+        workloads.
+      - **Provisioned**: specify read capacity units (RCUs) and write capacity units (WCUs), optionally with auto
+        scaling; usually cheaper for steady, predictable traffic, and reserved capacity can lower it further.
+      Requests beyond provisioned capacity (and burst capacity) are throttled.
+    examples: |
+      A new product with unknown traffic starts on-demand, then switches to provisioned with auto scaling once
+      traffic is steady.
+    limitations: |
+      You can switch modes, but only a limited number of times in a period; check the current quota.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D4 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: dynamodb-capacity-modes
+        excerpt: DynamoDB has on-demand mode, which bills per request and accommodates workloads as they ramp up or down, and provisioned mode, in which you specify read and write capacity and can use auto scaling.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: choose-capacity-mode
+        dimension: when
+        difficulty: 2
+        prompt: When would you choose DynamoDB on-demand capacity over provisioned capacity, and vice versa?
+        referenceAnswer: |
+          On-demand for unknown, new, or highly spiky traffic, or when you prefer to pay per request without capacity
+          planning. Provisioned (with auto scaling, possibly reserved capacity) for steady or predictable traffic,
+          where it is usually cheaper; over-capacity requests are throttled.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'On-demand for unpredictable/spiky/new workloads, pay per request',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Provisioned for predictable traffic, usually cheaper',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Provisioned can throttle; auto scaling helps',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: read-consistency
+    title: Read consistency
+    summary: Reads are eventually consistent by default; strongly consistent reads are available on tables and LSIs at twice the read cost.
+    explanation: |
+      By default, reads are **eventually consistent**: they might not reflect a write that completed very recently.
+      A **strongly consistent read** returns the most recent successful write, consumes twice the read capacity, and
+      is supported on base tables and local secondary indexes, but **not** on global secondary indexes or across
+      global table Regions. **Transactions** provide all-or-nothing writes across multiple items.
+    examples: |
+      A bank balance check reads with `ConsistentRead=true`; a product catalog page uses the cheaper default.
+    limitations: |
+      Strongly consistent reads may have higher latency and are unavailable on GSIs.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: dynamodb-read-consistency
+        excerpt: DynamoDB reads are eventually consistent unless you request a strongly consistent read, which returns the most up-to-date data but is not supported on global secondary indexes and uses more throughput capacity.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: strong-consistency-gsi
+        dimension: not_do
+        difficulty: 2
+        prompt: Can you perform a strongly consistent read on a DynamoDB global secondary index? What are the default and the alternatives?
+        referenceAnswer: |
+          No. GSI reads are always eventually consistent. Reads are eventually consistent by default; strongly
+          consistent reads are available on the base table and local secondary indexes, at twice the read capacity
+          cost. If you need strong consistency on that access pattern, read from the table (or an LSI) instead.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'No strongly consistent reads on GSIs', weight: 3, critical: true }
+            - { id: p2, text: 'Default reads are eventually consistent', weight: 2, critical: true }
+            - {
+                id: p3,
+                text: 'Strong reads available on tables/LSIs and cost twice as much',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: secondary-indexes
+    title: Local and global secondary indexes
+    summary: An LSI keeps the table's partition key with a different sort key; a GSI uses any keys, has its own capacity, and can be added later.
+    explanation: |
+      | | Local secondary index (LSI) | Global secondary index (GSI) |
+      |---|---|---|
+      | Keys | Same partition key, different sort key | Any partition and sort key |
+      | When created | Only when the table is created | Any time |
+      | Consistency | Eventual or strong | Eventual only |
+      | Capacity | Shares the table's | Its own |
+      | Limit | 10 GB per partition key value (item collection) | No item collection limit |
+    examples: |
+      Orders keyed by `customerId` add a GSI on `status` to list all pending orders across customers.
+    limitations: |
+      A GSI with too little write capacity can throttle writes to the base table.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+    citations:
+      - source: dynamodb-secondary-indexes
+        excerpt: A global secondary index can have a partition key and sort key different from the base table, while a local secondary index has the same partition key and a different sort key; local secondary indexes must be created with the table.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: lsi-or-gsi
+        dimension: when
+        difficulty: 3
+        prompt: An existing DynamoDB table needs a new access pattern on a different partition key. Which index type do you use, and what are its constraints?
+        referenceAnswer: |
+          A global secondary index: it can use a different partition key and can be added to an existing table. GSIs
+          have their own capacity, support only eventually consistent reads, and can throttle base-table writes if
+          under-provisioned. An LSI is not possible: it must share the partition key and be created with the table.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Use a global secondary index', weight: 3, critical: true }
+            - {
+                id: p2,
+                text: 'LSIs need the same partition key and must be created with the table',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'GSIs are eventually consistent and have their own capacity',
+                weight: 1,
+                critical: false,
+              }
+
+  - slug: global-tables
+    title: Global tables
+    summary: Global tables replicate a table across Regions for multi-Region, active-active reads and writes.
+    explanation: |
+      **Global tables** keep replicas of a table in multiple Regions. Applications read and write locally in each
+      Region, and DynamoDB replicates changes between replicas (asynchronously in the default mode, typically within
+      about a second, resolving conflicts with last-writer-wins). Use them for low-latency global access and
+      Regional disaster recovery.
+    examples: |
+      A global game stores player profiles in a global table with replicas in North America, Europe, and Asia.
+    limitations: |
+      With asynchronous replication, a read in one Region may not yet see a write made in another Region.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: dynamodb-global-tables
+        excerpt: Global tables provide a fully managed, multi-Region, multi-active database that replicates data across the AWS Regions you choose, so applications can read and write locally.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: multi-region-writes
+        dimension: solution
+        difficulty: 2
+        prompt: Users in three Regions need low-latency reads and writes to the same DynamoDB data, with the ability to survive a Regional outage. What feature fits, and what consistency caveat applies?
+        referenceAnswer: |
+          DynamoDB global tables: replicas in each Region accept local reads and writes, and DynamoDB replicates
+          changes between Regions, so the application can keep working if one Region fails. With the default
+          asynchronous replication, cross-Region reads can briefly miss recent writes, and conflicting writes are
+          resolved with last-writer-wins.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Use DynamoDB global tables (multi-Region, multi-active)',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Cross-Region replication is asynchronous by default (stale reads possible)',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Conflict resolution is last-writer-wins',
+                weight: 1,
+                critical: false,
+              }

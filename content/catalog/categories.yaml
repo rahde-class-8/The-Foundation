@@ -1,0 +1,7 @@
+categories:
+  - { slug: security-identity, name: 'Security, identity & compliance', sortOrder: 1 }
+  - { slug: networking, name: 'Networking & content delivery', sortOrder: 2 }
+  - { slug: compute, name: 'Compute', sortOrder: 3 }
+  - { slug: storage, name: 'Storage', sortOrder: 4 }
+  - { slug: database, name: 'Database', sortOrder: 5 }
+  - { slug: application-integration, name: 'Application integration', sortOrder: 6 }

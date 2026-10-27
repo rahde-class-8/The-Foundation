@@ -47,9 +47,9 @@ export function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>
-            <span className="text-xl">AWS Architecture Muscle Memory</span>
+            <span className="text-xl">The Foundation</span>
           </CardTitle>
-          <CardDescription>Sign in to continue studying.</CardDescription>
+          <CardDescription>AWS architecture study. Sign in to continue.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)} noValidate>

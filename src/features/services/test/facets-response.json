@@ -1,0 +1,69 @@
+{
+  "categories": [
+    {
+      "id": "c953a2a9-e874-4f11-a664-02a12f881823",
+      "name": "Security, identity & compliance",
+      "slug": "security-identity"
+    },
+    {
+      "id": "1a468f4c-e213-4e27-85e3-4f370fb7f5d1",
+      "name": "Networking & content delivery",
+      "slug": "networking"
+    },
+    {
+      "id": "172a743a-522f-4672-a85d-b8699bd390cc",
+      "name": "Compute",
+      "slug": "compute"
+    },
+    {
+      "id": "ebb44248-8740-4d07-ba2c-6a6c0399c708",
+      "name": "Storage",
+      "slug": "storage"
+    },
+    {
+      "id": "b3128ecc-499a-4cb3-87e4-088604441062",
+      "name": "Database",
+      "slug": "database"
+    },
+    {
+      "id": "008356db-4147-46c8-b36a-5b1271e9501b",
+      "name": "Application integration",
+      "slug": "application-integration"
+    }
+  ],
+  "certifications": [
+    {
+      "id": "244d08c7-d194-4744-abcd-62ee650be81b",
+      "code": "SAA",
+      "name": "AWS Certified Solutions Architect – Associate",
+      "vendor": "aws",
+      "domains": [
+        {
+          "id": "2c5448d5-6265-4674-99fe-e54318f4fde1",
+          "code": "D1",
+          "name": "Design Secure Architectures",
+          "weightPct": 30.0
+        },
+        {
+          "id": "275cc0d4-a5b0-41e5-8de8-9c6a8ce9cddd",
+          "code": "D2",
+          "name": "Design Resilient Architectures",
+          "weightPct": 26.0
+        },
+        {
+          "id": "c4a10443-381f-4085-ac0e-57077774e4e3",
+          "code": "D3",
+          "name": "Design High-Performing Architectures",
+          "weightPct": 24.0
+        },
+        {
+          "id": "26c63c7c-b7a5-4dee-b3e5-857a3c282f0b",
+          "code": "D4",
+          "name": "Design Cost-Optimized Architectures",
+          "weightPct": 20.0
+        }
+      ],
+      "examVersion": "C03"
+    }
+  ]
+}

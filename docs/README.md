@@ -1,4 +1,6 @@
-# AWS Architecture Muscle Memory — Planning Documentation
+# The Foundation — Project Documentation
+
+*Formerly "AWS Architecture Muscle Memory"; renamed by the project owner at the start of Phase 1.*
 
 **Status:** Architecture approved by the project owner on 2026-10-27. Phase 0 in progress.
 **Doc set version:** 0.1 (planning)

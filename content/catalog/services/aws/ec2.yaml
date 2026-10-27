@@ -1,0 +1,290 @@
+slug: ec2
+name: Amazon Elastic Compute Cloud
+aliases: [EC2]
+category: compute
+status: in_review
+origin: ai_draft
+docsUrl: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html
+summary: Resizable virtual servers (instances) with full control of the operating system, billed per second or by commitment.
+
+dimensions:
+  what: |
+    Virtual machines ("instances") launched from an Amazon Machine Image (AMI) onto an instance type that defines
+    vCPU, memory, storage, and network capacity.
+  how: |
+    You choose an AMI, instance type, subnet, security groups, storage (EBS volumes and/or instance store), and an
+    IAM instance profile. AWS runs the hypervisor and hardware; you manage the guest OS and everything above it.
+  problem: |
+    Buying and racking servers is slow and inflexible; capacity either sits idle or runs out.
+  solution: |
+    Instances launch in minutes, scale in and out with Auto Scaling groups, and are paid for by the second (On-Demand)
+    or at a discount through commitments (Savings Plans, Reserved Instances) or spare capacity (Spot).
+  not_do: |
+    - It does not patch, back up, or scale your instances for you; that is your responsibility (helped by Auto
+      Scaling, AWS Backup, and Systems Manager).
+    - Instance store data does not survive stopping or terminating the instance.
+    - An instance lives in one Availability Zone; high availability requires multiple instances across AZs.
+  when: |
+    Workloads needing OS-level control, long-running processes, custom software or licensing, specific hardware
+    (GPU, high memory), or steady utilization where serverless pricing would cost more.
+  where: |
+    The compute tier behind an Elastic Load Balancer, in private subnets, managed by an Auto Scaling group across at
+    least two Availability Zones.
+  trade_offs: |
+    Maximum control and broad instance choice, in exchange for operational work (patching, scaling, capacity
+    planning) and paying for provisioned capacity whether it is busy or idle.
+
+related:
+  - {
+      service: lambda,
+      relation: alternative_to,
+      note: 'Serverless compute for short, event-driven work without managing instances.',
+    }
+  - {
+      service: elastic-load-balancing,
+      relation: commonly_paired_with,
+      note: 'Distributes traffic across instances in multiple AZs.',
+    }
+  - {
+      service: vpc,
+      relation: often_confused_with,
+      note: 'Security groups are configured on instances but belong to the VPC.',
+    }
+
+concepts:
+  - slug: instance-types-and-amis
+    title: Instance types and AMIs
+    summary: The AMI defines what software the instance boots; the instance type defines its hardware profile.
+    explanation: |
+      An **AMI** packages the root volume template (OS and software), launch permissions, and block device mappings.
+      **Instance types** are grouped into families optimized for different needs: general purpose (for example M),
+      compute optimized (C), memory optimized (R, X), storage optimized (I, D), and accelerated computing (P, G,
+      Inf). The size (large, xlarge, …) scales resources within the family.
+    examples: |
+      An in-memory analytics workload fits a memory-optimized R instance; a batch encoder fits compute-optimized C instances.
+    limitations: |
+      AMIs are Regional; copy an AMI to use it in another Region.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+    citations:
+      - source: ec2-instance-types
+        excerpt: The instance type determines the hardware of the host computer, and instance types are grouped into families such as general purpose, compute optimized, memory optimized, storage optimized, and accelerated computing.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: choose-family
+        dimension: when
+        difficulty: 1
+        prompt: Name four EC2 instance families by purpose and say what kind of workload fits each.
+        referenceAnswer: |
+          General purpose (balanced, for example web servers), compute optimized (CPU-bound work such as batch
+          processing or encoding), memory optimized (large in-memory datasets such as caches or analytics), storage
+          optimized (high local I/O such as data warehouses), and accelerated computing (GPUs or ML accelerators).
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Names at least four families correctly', weight: 3, critical: true }
+            - {
+                id: p2,
+                text: 'Matches each family to a suitable workload',
+                weight: 2,
+                critical: true,
+              }
+
+  - slug: purchasing-options
+    title: Purchasing options
+    summary: On-Demand for flexibility, Savings Plans and Reserved Instances for steady use, Spot for interruptible work at deep discounts.
+    explanation: |
+      - **On-Demand**: pay by the second with no commitment.
+      - **Savings Plans / Reserved Instances**: commit to 1 or 3 years of usage for a significant discount.
+      - **Spot Instances**: use spare capacity at a large discount, but AWS can interrupt them with a **two-minute
+        warning** when it needs the capacity back.
+      - **Dedicated Hosts / Dedicated Instances**: single-tenant hardware for compliance or licensing.
+    examples: |
+      Run the baseline web fleet on a Savings Plan, burst with On-Demand, and run fault-tolerant batch jobs on Spot.
+    limitations: |
+      Spot is unsuitable for workloads that cannot tolerate interruption, such as a single-instance database.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D4 }
+    citations:
+      - source: ec2-purchasing-options
+        excerpt: EC2 offers On-Demand Instances, Savings Plans, Reserved Instances, Spot Instances that use spare capacity at a discount and can be interrupted, and Dedicated Hosts and Instances.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: spot-fit
+        dimension: trade_offs
+        difficulty: 2
+        prompt: When are Spot Instances a good choice, and when are they a poor one? Explain the trade-off.
+        referenceAnswer: |
+          Spot uses spare EC2 capacity at a steep discount, but AWS can reclaim it with a two-minute interruption
+          notice. It suits stateless, fault-tolerant, or flexible workloads (batch, CI, big-data workers, containers
+          behind a scheduler). It is a poor fit for workloads that cannot be interrupted, such as a single database
+          server or long jobs without checkpointing.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Spot can be interrupted by AWS (two-minute notice)',
+                weight: 3,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Good for fault-tolerant, stateless, or flexible workloads',
+                weight: 2,
+                critical: true,
+              }
+            - { id: p3, text: 'Large discount versus On-Demand', weight: 1, critical: false }
+            - { id: p4, text: 'Poor for uninterruptible workloads', weight: 1, critical: false }
+
+  - slug: ebs-vs-instance-store
+    title: EBS volumes vs instance store
+    summary: EBS volumes are network-attached and persist independently; instance store is fast local storage that is lost on stop or termination.
+    explanation: |
+      **Amazon EBS** volumes are network-attached block storage in one Availability Zone. They persist independently
+      of the instance, can be snapshotted to S3-backed storage, and can be detached and reattached. **Instance store**
+      is disk physically attached to the host: very fast, but its data is lost when the instance stops, hibernates,
+      or terminates (it survives a reboot).
+    examples: |
+      Keep a database on EBS; use instance store for scratch space, caches, or replicated data such as a Kafka log
+      with replicas elsewhere.
+    limitations: |
+      An EBS volume can only attach to instances in its own Availability Zone; use a snapshot to move data across AZs.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D3, relevance: supporting }
+    citations:
+      - source: ebs-what-is
+        excerpt: EBS provides block storage volumes that attach to instances, persist independently from the instance's life, and are created in a specific Availability Zone.
+        excerptKind: paraphrase
+        supports: defines
+      - source: ec2-instance-store
+        excerpt: Instance store provides temporary block-level storage on disks physically attached to the host; data is lost if the instance stops, hibernates, or terminates.
+        excerptKind: paraphrase
+        supports: limitation
+    questions:
+      - key: storage-persistence
+        dimension: not_do
+        difficulty: 2
+        prompt: What happens to data on an instance store volume when the instance is stopped, and when would you still choose instance store over EBS?
+        referenceAnswer: |
+          Instance store data is lost when the instance stops, hibernates, or terminates (it survives only a reboot),
+          because the disks are attached to the physical host. Choose it for temporary, high-performance data such as
+          caches, buffers, scratch space, or data that is replicated elsewhere.
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Data is lost on stop/termination', weight: 3, critical: true }
+            - {
+                id: p2,
+                text: 'Use for temporary or replicated high-performance data',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'EBS persists independently of the instance',
+                weight: 1,
+                critical: false,
+              }
+          knownMisconceptions:
+            - slug: instance-store-persists-stop
+              statement: Instance store data survives stopping and starting an instance.
+              correction: Only a reboot keeps instance store data; stop, hibernate, and terminate lose it.
+
+  - slug: placement-groups
+    title: Placement groups
+    summary: Cluster groups pack instances for low latency, spread groups separate them onto distinct hardware, and partition groups isolate sets of instances.
+    explanation: |
+      - **Cluster**: instances close together in one Availability Zone for low-latency, high-throughput networking (HPC).
+      - **Spread**: each instance on distinct hardware to reduce correlated failures; limited to seven running
+        instances per AZ per group.
+      - **Partition**: groups of instances on separate racks (partitions), for large distributed systems such as
+        HDFS, HBase, or Cassandra.
+    examples: |
+      A tightly coupled simulation uses a cluster placement group; three critical controllers use a spread placement group.
+    limitations: |
+      A cluster placement group trades resilience for performance: all instances share one AZ.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D3 }
+      - { certification: aws/SAA/C03, domain: D2, relevance: supporting }
+    citations:
+      - source: ec2-placement-groups
+        excerpt: Placement group strategies are cluster (packed close together in one Availability Zone for low latency), partition (spread across logical partitions on different racks), and spread (each instance on distinct hardware).
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: choose-placement
+        dimension: when
+        difficulty: 2
+        prompt: Describe the three EC2 placement group strategies and give a workload for each.
+        referenceAnswer: |
+          Cluster packs instances close together in one AZ for low-latency, high-bandwidth networking (HPC).
+          Spread puts each instance on distinct hardware to minimize correlated failure (a few critical instances).
+          Partition divides instances into partitions on separate racks (large distributed systems such as Cassandra
+          or HDFS).
+        rubric:
+          schemaVersion: 1
+          points:
+            - { id: p1, text: 'Cluster: low latency, single AZ', weight: 2, critical: true }
+            - { id: p2, text: 'Spread: distinct hardware per instance', weight: 2, critical: true }
+            - {
+                id: p3,
+                text: 'Partition: separate racks for groups of instances',
+                weight: 2,
+                critical: true,
+              }
+            - { id: p4, text: 'A fitting workload for each', weight: 1, critical: false }
+
+  - slug: auto-scaling
+    title: EC2 Auto Scaling groups
+    summary: An Auto Scaling group keeps a fleet at the desired size across AZs, replaces unhealthy instances, and scales with demand.
+    explanation: |
+      An **Auto Scaling group** launches instances from a launch template into subnets across Availability Zones,
+      keeping capacity between a minimum and a maximum. It replaces instances that fail health checks (EC2 or load
+      balancer checks) and adjusts the desired capacity through **target tracking**, step, scheduled, or predictive
+      scaling policies.
+    examples: |
+      A target-tracking policy keeps average CPU near 50% by adding instances during traffic peaks and removing them overnight.
+    limitations: |
+      Auto Scaling does not make an application stateless: instances can be terminated, so keep session state externally.
+    mappings:
+      - { certification: aws/SAA/C03, domain: D2 }
+      - { certification: aws/SAA/C03, domain: D4, relevance: supporting }
+    citations:
+      - source: ec2-auto-scaling
+        excerpt: EC2 Auto Scaling helps maintain application availability by keeping the correct number of instances, replacing unhealthy instances, and scaling capacity according to policies.
+        excerptKind: paraphrase
+        supports: defines
+    questions:
+      - key: asg-resilience
+        dimension: solution
+        difficulty: 2
+        prompt: How does an Auto Scaling group improve both availability and cost for a web tier?
+        referenceAnswer: |
+          Availability: it spreads instances across multiple AZs, maintains a minimum count, and replaces instances
+          that fail EC2 or load balancer health checks. Cost: scaling policies (for example target tracking on CPU or
+          request count) add instances only when demand rises and remove them when it falls.
+        rubric:
+          schemaVersion: 1
+          points:
+            - {
+                id: p1,
+                text: 'Replaces unhealthy instances and maintains capacity',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p2,
+                text: 'Spreads instances across Availability Zones',
+                weight: 2,
+                critical: true,
+              }
+            - {
+                id: p3,
+                text: 'Scales in and out with demand to reduce cost',
+                weight: 2,
+                critical: true,
+              }
