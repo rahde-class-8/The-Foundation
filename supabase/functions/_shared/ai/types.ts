@@ -1,3 +1,4 @@
+import type { DraftOutput } from '../core/content/drafts.ts';
 import type { EvaluationOutput } from '../core/grading/evaluation.ts';
 import type { Dimension, RubricV1 } from '../core/grading/rubric.ts';
 
@@ -17,8 +18,8 @@ export type ProviderErrorCode =
 
 export type TokenUsage = { inputTokens: number; outputTokens: number };
 
-export type ProviderResult =
-  | { ok: true; value: EvaluationOutput; usage: TokenUsage; model: string; rawExcerpt: string }
+export type ProviderResult<T = EvaluationOutput> =
+  | { ok: true; value: T; usage: TokenUsage; model: string; rawExcerpt: string }
   | {
       ok: false;
       error: ProviderErrorCode;
@@ -36,5 +37,23 @@ export interface EvaluationProvider {
     options: { signal: AbortSignal; timeoutMs: number },
   ): Promise<ProviderResult>;
   /** Estimated cost in USD for the given usage. */
+  costUsd(usage: TokenUsage): number;
+}
+
+export type DraftRequest = {
+  serviceName: string;
+  /** Passages as untrusted data, cited back by alias (P1, P2, …). */
+  passages: { alias: string; sourceTitle: string; text: string }[];
+  maxConcepts: number;
+};
+
+/** A drafting backend for generate-drafts (CONTENT_GOVERNANCE §5–§6). The model gets no tools. */
+export interface DraftProvider {
+  readonly id: string;
+  readonly model: string;
+  generateDrafts(
+    request: DraftRequest,
+    options: { signal: AbortSignal; timeoutMs: number },
+  ): Promise<ProviderResult<DraftOutput>>;
   costUsd(usage: TokenUsage): number;
 }

@@ -15,16 +15,24 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
  * Provider-independent timeout, retry, and deadline handling (SYSTEM_ARCHITECTURE §6). Only
  * retryable failures are retried, with backoff and jitter, and never past the overall deadline.
  */
-export async function evaluateWithPolicy(
+export function evaluateWithPolicy(
   provider: EvaluationProvider,
   request: EvaluationRequest,
   options: PolicyOptions,
 ): Promise<{ result: ProviderResult; attempts: number; latencyMs: number }> {
+  return withPolicy((call) => provider.evaluate(request, call), options);
+}
+
+/** Runs any provider call under the shared timeout, retry, and deadline rules. */
+export async function withPolicy<T>(
+  call: (options: { signal: AbortSignal; timeoutMs: number }) => Promise<ProviderResult<T>>,
+  options: PolicyOptions,
+): Promise<{ result: ProviderResult<T>; attempts: number; latencyMs: number }> {
   const sleep = options.sleep ?? defaultSleep;
   const now = options.now ?? Date.now;
   const started = now();
   let attempts = 0;
-  let result: ProviderResult = {
+  let result: ProviderResult<T> = {
     ok: false,
     error: 'timeout',
     retryable: false,
@@ -39,7 +47,7 @@ export async function evaluateWithPolicy(
     const timeoutMs = Math.min(options.timeoutMs, remaining);
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<ProviderResult>((resolve) => {
+    const timeout = new Promise<ProviderResult<T>>((resolve) => {
       timer = setTimeout(() => {
         controller.abort();
         resolve({
@@ -52,14 +60,14 @@ export async function evaluateWithPolicy(
     });
     try {
       result = await Promise.race([
-        provider
-          .evaluate(request, { signal: controller.signal, timeoutMs })
-          .catch((error: unknown): ProviderResult => ({
+        call({ signal: controller.signal, timeoutMs }).catch(
+          (error: unknown): ProviderResult<T> => ({
             ok: false,
             error: 'provider_error',
             retryable: true,
             message: error instanceof Error ? error.message : String(error),
-          })),
+          }),
+        ),
         timeout,
       ]);
     } finally {

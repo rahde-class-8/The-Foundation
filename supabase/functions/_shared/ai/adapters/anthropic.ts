@@ -10,13 +10,13 @@ import type {
 } from '../types.ts';
 
 /** USD per million tokens (input, output); update with published pricing. */
-const PRICING: Record<string, [number, number]> = {
+export const PRICING: Record<string, [number, number]> = {
   'claude-opus-5-5': [4, 20],
   'claude-sonnet-5-5': [2, 10],
   'claude-haiku-5-5': [0.1, 0.5],
 };
 
-type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+export type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 /** Claude grader using structured outputs, validated again by the core schema (ADR-0004). */
 export class AnthropicEvaluationProvider implements EvaluationProvider {
@@ -97,7 +97,7 @@ export class AnthropicEvaluationProvider implements EvaluationProvider {
   }
 }
 
-function mapError(error: unknown): ProviderResult {
+export function mapError<T>(error: unknown): ProviderResult<T> {
   const message = error instanceof Error ? error.message.slice(0, 500) : String(error);
   if (
     error instanceof Anthropic.APIUserAbortError ||
