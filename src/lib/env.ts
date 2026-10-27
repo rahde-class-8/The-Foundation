@@ -18,4 +18,10 @@ export function parseEnv(source: Record<string, unknown>): Env {
   return result.data;
 }
 
-export const env: Env = parseEnv(import.meta.env);
+let cached: Env | undefined;
+
+/** Validated client configuration; parsed on first use so importing this module never throws. */
+export function getEnv(): Env {
+  cached ??= parseEnv(import.meta.env);
+  return cached;
+}

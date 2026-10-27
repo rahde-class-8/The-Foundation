@@ -25,14 +25,14 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
-      - run: npm run test:coverage
+      - run: .github/scripts/run-annotated.sh npm run test:coverage
       - name: Build
         run: npm run build
         env:
           VITE_SUPABASE_URL: http://127.0.0.1:54321
           VITE_SUPABASE_ANON_KEY: ci-placeholder
       - name: Scan client bundle for server-only secrets
-        run: npm run check:secrets
+        run: .github/scripts/run-annotated.sh npm run check:secrets
 
   deno:
     name: Edge Functions type-check (Deno)
@@ -60,20 +60,20 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Start local Supabase
-        run: npx supabase start -x studio,imgproxy,vector,logflare,supavisor,realtime,mailpit
+        run: .github/scripts/run-annotated.sh npx supabase start -x studio,imgproxy,vector,logflare,supavisor,realtime,mailpit
       - name: Database tests (pgTAP)
-        run: npm run test:db
+        run: .github/scripts/run-annotated.sh npm run test:db
       - name: Generated database types are up to date
         run: |
           npm run db:types
-          git diff --exit-code src/lib/database.types.ts
-      - run: npm run db:create-owner
+          .github/scripts/run-annotated.sh git diff --exit-code src/lib/database.types.ts
+      - run: .github/scripts/run-annotated.sh npm run db:create-owner
       - run: npm run env:local
       - name: Integration tests
-        run: npm run test:int
+        run: .github/scripts/run-annotated.sh npm run test:int
       - run: npx playwright install --with-deps chromium
       - name: End-to-end tests
-        run: npm run test:e2e
+        run: .github/scripts/run-annotated.sh npm run test:e2e
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -89,6 +89,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run gitleaks
+        # Run as the runner user so git accepts ownership of the mounted checkout.
         run: >
-          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1
-          git /repo --redact --verbose
+          .github/scripts/run-annotated.sh
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/repo"
+          ghcr.io/gitleaks/gitleaks:v8.30.1
+          git /repo --config /repo/.gitleaks.toml --redact --verbose

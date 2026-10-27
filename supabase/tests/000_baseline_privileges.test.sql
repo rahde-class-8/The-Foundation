@@ -8,10 +8,13 @@ select is(
   'every table in public has row-level security enabled'
 );
 
--- New objects created by the migration role receive no implicit grants.
+-- New objects created by the migration role (postgres) receive no implicit grants.
+set local role postgres;
 create table public.__privilege_probe (id int);
 alter table public.__privilege_probe enable row level security;
 create function public.__privilege_probe_fn() returns int language sql as 'select 1';
+
+reset role;
 
 select ok(not has_table_privilege('anon', 'public.__privilege_probe', 'select'), 'anon has no default table access');
 select ok(not has_table_privilege('authenticated', 'public.__privilege_probe', 'select'), 'authenticated has no default table access');
