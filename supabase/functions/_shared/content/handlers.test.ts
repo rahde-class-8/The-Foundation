@@ -206,7 +206,10 @@ describe('generateDrafts (CNT-5, CNT-6, CNT-9a)', () => {
     );
     expect(response.job.status).toBe('succeeded');
     expect(response.drafts).toEqual([
-      expect.objectContaining({ title: 'A dead-letter queue holds messages that', questionCount: 1 }),
+      expect.objectContaining({
+        title: 'A dead-letter queue holds messages that',
+        questionCount: 1,
+      }),
     ]);
     expect(store.createdDrafts[0]?.[0]?.citations).toEqual([
       { passageId: P1, supportType: 'defines' },
