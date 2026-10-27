@@ -95,6 +95,13 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: End-to-end tests
         run: .github/scripts/run-annotated.sh npm run test:e2e
+      - name: Publish Edge Function logs on failure
+        if: failure()
+        run: |
+          container=$(docker ps -a --format '{{.Names}}' | grep edge_runtime | head -n 1)
+          [ -n "$container" ] || exit 0
+          logs=$(docker logs "$container" 2>&1 | grep -v '^\s*$' | tail -n 60 | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g' | cut -c1-4000)
+          echo "::warning title=edge runtime logs::$logs"
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

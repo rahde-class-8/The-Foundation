@@ -80,11 +80,19 @@ export function createPracticeStore(db: SupabaseClient): PracticeStore {
       ) as Row | null;
       if (!attempt) return null;
 
+      // questions and question_versions are linked by two foreign keys, so no embedding here.
       const version = check(
         await db
           .from('question_versions')
-          .select('prompt_md, reference_answer_md, rubric, questions(dimension)')
+          .select('prompt_md, reference_answer_md, rubric, question_id')
           .eq('id', attempt.question_version_id as string)
+          .single(),
+      ) as Row;
+      const question = check(
+        await db
+          .from('questions')
+          .select('dimension')
+          .eq('id', version.question_id as string)
           .single(),
       ) as Row;
       const concept = check(
@@ -101,7 +109,7 @@ export function createPracticeStore(db: SupabaseClient): PracticeStore {
           .eq('user_id', userId)
           .maybeSingle(),
       ) as Row | null;
-      const dimension = (version.questions as { dimension?: string } | null)?.dimension;
+      const dimension = question.dimension as string | undefined;
 
       return {
         attempt: {
